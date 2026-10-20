@@ -82,3 +82,38 @@ test('decided settings stay inside safe ranges and styles differ', () => {
   for (const s of ['natural', 'pop', 'dryrap', 'bongo']) { const { p } = decide(a, s); assert.ok(p.hpf >= 80 && p.hpf <= 110 && p.mud >= 0 && p.mud <= 5 && p.sib >= 0 && p.sib <= 6 && p.mk >= 0 && p.mk <= 8 && p.thr >= -40 && p.thr <= -12); }
   assert.ok(decide(a, 'bongo').p.rev > decide(a, 'dryrap').p.rev);
 });
+import { kLoudness, truePeakDb, limiter, master, TARGETS, stereoStats, mixAdvice } from '../dsp.js';
+const tone = (f, a, secs, ph = 0) => Float32Array.from({ length: Math.round(sr * secs) }, (_, i) => a * Math.sin(2 * Math.PI * f * i / sr + ph));
+test('LUFS: 1 kHz stereo sine at -20 dBFS reads about -20 LUFS', () => {
+  const x = tone(1000, 0.1, 10), l = kLoudness([x, x], sr);
+  assert.ok(Math.abs(l.integrated - -20) < 0.25, String(l.integrated));
+});
+test('LUFS rises 6 dB when level doubles; silence is -Infinity', () => {
+  const a = kLoudness([tone(1000, 0.1, 6), tone(1000, 0.1, 6)], sr).integrated, b = kLoudness([tone(1000, 0.2, 6), tone(1000, 0.2, 6)], sr).integrated;
+  assert.ok(Math.abs(b - a - 6.02) < 0.1);
+  assert.equal(kLoudness([new Float32Array(sr * 3), new Float32Array(sr * 3)], sr).integrated, -Infinity);
+});
+test('true peak catches an inter-sample peak the sample peak misses', () => {
+  const x = tone(sr / 4, 1, 1, Math.PI / 4), sp = 20 * Math.log10(Math.max(...x.map(Math.abs)));
+  assert.ok(sp < -2.9 && truePeakDb(x, sr) > -0.6);
+});
+test('limiter holds the ceiling on spikes and leaves quiet audio untouched', () => {
+  const x = tone(220, 0.3, 2); x[30000] = 1.8; x[30001] = -1.7; const c = 10 ** (-1 / 20), r = limiter([x], sr, -1);
+  assert.ok(Math.max(...x.map(Math.abs)) <= c + 1e-6);
+  const q = tone(220, 0.2, 1), q0 = Float32Array.from(q), r2 = limiter([q], sr, -1);
+  assert.equal(r2.maxGrDb, 0); assert.deepEqual(q, q0);
+});
+test('master reaches target, respects true-peak ceiling and limiter depth', () => {
+  const mk = a => [0, 1].map(c => Float32Array.from({ length: sr * 12 }, (_, i) => a * (Math.sin(2 * Math.PI * 110 * i / sr) + 0.5 * Math.sin(2 * Math.PI * 1500 * i / sr + c)) * (0.6 + 0.4 * Math.sin(2 * Math.PI * 2 * i / sr))));
+  for (const a of [0.05, 0.4]) { const r = master(mk(a), sr, TARGETS.streaming);
+    assert.ok(r.tpDb <= -1 + 0.06, 'tp ' + r.tpDb); assert.ok(r.maxGrDb <= 5.1, 'gr ' + r.maxGrDb); assert.ok(Math.abs(r.after.integrated - -14) < 1, 'lufs ' + r.after.integrated); }
+});
+test('stereo stats: identical channels are mono-safe, opposite channels are not', () => {
+  const x = tone(300, 0.3, 1), n = Float32Array.from(x, v => -v);
+  assert.ok(stereoStats(x, x).monoDropDb > -0.1); assert.ok(stereoStats(x, n).monoDropDb < -40);
+});
+test('mix advice flags masking and suggests vocal gain', () => {
+  const base = { beatLufs: -14, voxLufs: -20, beatPres: -50, voxPres: -48, beatLowPct: 60, monoDropDb: -1, corr: 0.9, widthDb: -12, tpDb: -3, mixLufs: -13, shortMax: -11 };
+  const a = mixAdvice(base, 'natural'), has = f => a.some(i => i[2] && f(i[2]));
+  assert.ok(has(x => x.vg > 0) && has(x => x.dip > 0) && a.some(i => i[0] === 'warn'));
+});

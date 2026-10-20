@@ -18,7 +18,7 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
 #status{position:sticky;bottom:0;background:#101015;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
 #status.err{border-color:var(--rec);color:#ffb4b6}#dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
 </style></head><body>
-<h1>BLACK MZUNGU STUDIO</h1><small>Stage C · auto vocal engineer · private, everything stays on this device</small>
+<h1>BLACK MZUNGU STUDIO</h1><small>Stage D · mix assistant & master · private, everything stays on this device</small>
 
 <div class="card"><h2>1 · Beat</h2>
  <label class="btn" for="file">Import beat (WAV / MP3 / M4A)</label><input id="file" type="file" accept="audio/*" hidden>
@@ -48,14 +48,21 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
  <div id="report"></div>
  <details><summary>Adjust each effect</summary><div id="fxui"></div></details>
  <small>Changes apply the next time you press play. A/B levels are not loudness-matched yet (Stage D).</small></div>
-<div class="card"><h2>5 · Export</h2>
+<div class="card"><h2>5 · Mix Assistant &amp; Master</h2>
+ <small>Measures your beat, vocal and mix, and tells you what is measured and what is only a taste suggestion. Nothing changes until you tap Apply.</small>
+ <button id="mixchk" class="p">Check my mix</button><div id="mixrep"></div>
+ <button id="mixundo">↶ Undo applied suggestions</button>
+ <label>Master target<select id="target" style="width:100%;padding:10px;font-size:16px"><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
+ <button id="expmast" class="p">Master &amp; export (WAV)</button>
+ <small>Mastering = loudness target + lookahead limiter, with a −1 dBTP true-peak ceiling. It will not squash the mix harder than about 5 dB of limiting, so it may land a little under the target instead. It runs on this phone, so keep this screen open.</small></div>
+<div class="card"><h2>6 · Export</h2>
  <button id="expmix" class="p">Export full mix (WAV)</button>
  <button id="expvox">Export vocal stem, dry (WAV)</button><button id="expfx">Export vocal stem, processed (WAV)</button><div id="dl"></div>
 </div>
 <div id="status">Ready.</div>
 
 <script type="module">
-import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES} from './dsp.js';
+import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS} from './dsp.js';
 const $=id=>document.getElementById(id);
 const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
 const uid=()=>Date.now()*1000+Math.floor(Math.random()*1000);
@@ -87,7 +94,7 @@ const abCache=new WeakMap();
 const bufOf=t=>{let b=abCache.get(t);if(!b){b=new AudioBuffer({length:t.data.length,sampleRate:t.sr,numberOfChannels:1});b.copyToChannel(t.data,0);abCache.set(t,b)}return b};
 function schedule(c,dest,when,o,from=0){const out=[];let first=null;
  const mk=(buf,g,at,off,dur,to=dest)=>{const s=c.createBufferSource(),n=c.createGain();s.buffer=buf;n.gain.value=g;s.connect(n).connect(to);s.start(at,off,dur);out.push(s);return s};
- if(S.beat&&o.beat&&from<S.beat.audio.duration)first=mk(S.beat.audio,dbv(+$('bg').value),when,from);
+ if(S.beat&&o.beat&&from<S.beat.audio.duration){let bb=dest;if(S.dip>0){bb=c.createBiquadFilter();bb.type='peaking';bb.frequency.value=3000;bb.Q.value=1;bb.gain.value=-S.dip;bb.connect(dest)}first=mk(S.beat.audio,dbv(+$('bg').value),when,from,undefined,bb)}
  let vd=dest;if(o.vocal&&o.fx!==false&&S.fx.on)vd=buildChain(c,dest);if(o.vocal)for(const cl of S.clips){if(cl.mute||clipEnd(cl)<=from+0.001)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
   const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(cl.dur-skip,t.data.length/t.sr-off);if(dur<=0)continue;mk(bufOf(t),dbv(+$('vg').value),when+Math.max(0,cl.start-from),off,dur,vd)}
  return{out,first}}
@@ -179,6 +186,30 @@ $('auto').onclick=()=>{const segs=[];let sr=0;for(const cl of S.clips){if(cl.mut
  $('report').innerHTML=`<div class="take" style="display:block"><b>Measured</b><br><small>Peak ${a.peakDb.toFixed(1)} dBFS · level ${a.rmsDb.toFixed(1)} dB · noise floor ${a.noiseFloorDb.toFixed(1)} dB · dynamic range ${a.dynRangeDb.toFixed(0)} dB</small></div>`+notes.map(([k,t])=>`<div class="take" style="display:block"><small>${tag[k]}</small><br>${t}</div>`).join('');
  msg('Effects set from your vocal. Press play to listen, and use the ON/OFF button to compare. Thresholds are starting points, so adjust by ear.')};
 renderFx();
+// ---- mix assistant & mastering ----
+S.dip=+localStorage.bms_dip||0;S.mixPrev=null;
+async function renderRaw(o){const sr=44100,dur=Math.max(o.beat&&S.beat?S.beat.audio.duration:0,...S.clips.filter(c=>!c.mute).map(clipEnd)),oc=new OfflineAudioContext(2,Math.ceil(dur*sr),sr);schedule(oc,oc.destination,0,o,0);const r=await oc.startRendering();return{ch:[r.getChannelData(0),r.getChannelData(1)],sr,dur}}
+const monoOf=a=>{const o=new Float32Array(a[0].length);for(let i=0;i<o.length;i++)o[i]=(a[0][i]+a[1][i])/2;return o};
+const wait=()=>new Promise(r=>setTimeout(r,30));
+const TAG={measured:'📏 Measured',choice:'🎛 Taste suggestion',warn:'⚠ Warning'};
+$('mixchk').onclick=async()=>{try{if(!S.beat||!S.clips.some(c=>!c.mute))return msg('The Mix Assistant needs a beat and at least one vocal clip.',1);
+ msg('Analysing your mix… keep this screen open.');await wait();
+ const B=await renderRaw({beat:1,vocal:0}),V=await renderRaw({beat:0,vocal:1,fx:true}),M=await renderRaw({beat:1,vocal:1,fx:true}),sr=B.sr;
+ const bs=analyseVocal(monoOf(B.ch),sr),vs=analyseVocal(monoOf(V.ch),sr);if(vs.silent||bs.silent)return msg('Either the beat or the vocal is silent or too quiet to analyse.',1);
+ const ml=kLoudness(M.ch,sr),m={beatLufs:kLoudness(B.ch,sr).integrated,voxLufs:kLoudness(V.ch,sr).integrated,beatPres:bs.presAbsDb,voxPres:vs.presAbsDb,beatLowPct:bs.lowPct,...stereoStats(M.ch[0],M.ch[1]),tpDb:Math.max(truePeakDb(M.ch[0],sr),truePeakDb(M.ch[1],sr)),mixLufs:ml.integrated,shortMax:ml.shortMax};
+ const adv=mixAdvice(m,S.fx.style),box=$('mixrep');box.innerHTML='';
+ for(const [k,t,ap] of adv){const d=document.createElement('div');d.className='take';d.style.display='block';d.innerHTML=`<small>${TAG[k]}</small><br>${t}`;
+  if(ap){const b=document.createElement('button');b.textContent='Apply this';b.onclick=()=>{S.mixPrev={vg:$('vg').value,dip:S.dip};if(ap.vg!=null){const v=Math.max(-24,Math.min(12,+$('vg').value+ap.vg));$('vg').value=v;$('vgv').textContent=v;localStorage.bms_vg=v}if(ap.dip!=null){S.dip=ap.dip;localStorage.bms_dip=S.dip}b.disabled=true;b.textContent='Applied. Press play to hear it, then Undo if you prefer the old balance.'};d.append(b)}box.append(d)}
+ msg('Mix check done. Measured facts and taste suggestions are labelled separately.')}catch(e){msg('Mix check failed: '+(e.message||e),1)}};
+$('mixundo').onclick=()=>{if(!S.mixPrev)return msg('Nothing to undo.',1);$('vg').value=S.mixPrev.vg;$('vgv').textContent=S.mixPrev.vg;localStorage.bms_vg=S.mixPrev.vg;S.dip=S.mixPrev.dip;localStorage.bms_dip=S.dip;S.mixPrev=null;msg('Suggestions undone.')};
+$('expmast').onclick=async()=>{try{if(!S.beat&&!S.clips.some(c=>!c.mute))return msg('Nothing to master yet.',1);
+ msg('Mastering… this can take a minute on a phone. Keep this screen open.');await wait();
+ const R=await renderRaw({beat:1,vocal:1,fx:true});await wait();const T=TARGETS[$('target').value],res=master(R.ch,R.sr,T);
+ if(analyse(res.chs[0]).silent&&analyse(res.chs[1]).silent)return msg('Mastering produced silence. Nothing was saved.',1);
+ const ab=wavEncode(res.chs,R.sr),v=validateWav(ab);if(!v.ok||v.frames!==R.ch[0].length||v.ch!==2||v.sr!==R.sr)return msg('Export validation failed. File not offered.',1);
+ offer(ab,'black-mzungu-master-'+$('target').value+'.wav');
+ const gained=res.gainDb>=0?`raised ${res.gainDb.toFixed(1)} dB`:`lowered ${Math.abs(res.gainDb).toFixed(1)} dB`;
+ msg(`Master ready & verified: ${fmtTime(R.dur)}, stereo, 16-bit. Loudness ${res.before.integrated.toFixed(1)} → ${res.after.integrated.toFixed(1)} LUFS (target ${T.lufs}), level ${gained}, limiter worked up to ${res.maxGrDb.toFixed(1)} dB, true peak ${res.tpDb.toFixed(1)} dBTP.${res.reached?'':' It stopped short of the target because reaching it would need harder limiting than is good for the sound.'}`)}catch(e){msg('Mastering failed: '+(e.message||e),1)}};
 // ---- export ----
 function offer(buf,name){const url=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));$('dl').innerHTML=`<a href="${url}" download="${name}">⬇ Tap to save ${name}</a>`}
 async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!c.mute))return msg('Nothing to export yet.',1);msg('Rendering…');
