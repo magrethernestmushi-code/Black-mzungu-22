@@ -18,64 +18,89 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
 #status{position:sticky;bottom:0;background:#101015;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
 #status.err{border-color:var(--rec);color:#ffb4b6}#dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
 </style></head><body>
-<h1>BLACK MZUNGU STUDIO</h1><small>Stage A · beat → record → play → export · private, everything stays on this device</small>
+<h1>BLACK MZUNGU STUDIO</h1><small>Stage C · auto vocal engineer · private, everything stays on this device</small>
 
 <div class="card"><h2>1 · Beat</h2>
  <label class="btn" for="file">Import beat (WAV / MP3 / M4A)</label><input id="file" type="file" accept="audio/*" hidden>
- <div id="beatname" class="mut">No beat loaded</div><canvas id="wave" width="700" height="180"></canvas>
+ <div id="beatname" class="mut">No beat loaded</div><canvas id="wave" width="700" height="210"></canvas><div class="mut" id="cur">Playhead 0:00.0 · tap the timeline to move it</div>
 </div>
 
 <div class="card"><h2>2 · Record</h2>
  <small>Use headphones. Mic monitoring is off, so no feedback. Echo cancel, noise suppression and auto-gain are switched off for clean audio.</small>
  <button id="rec" class="rec">● RECORD</button>
- <div class="row"><button id="play">▶ Play beat + take</button><button id="stop">■ Stop</button></div>
- <label>Latency compensation: <b id="latv">0</b> ms<br><small>Bluetooth is usually 150–250 ms. Wired is lower. Adjust by ear until the take sits on the beat.</small>
+ <div class="row"><button id="play">▶ Play from playhead</button><button id="stop">■ Stop</button></div>
+ <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:10px;font-size:16px"></label><label>Count-in<select id="cin" style="width:100%;padding:10px;font-size:16px"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div><label><input type="checkbox" id="met" checked> Metronome on</label><br><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><small><br>Recording starts at the playhead, so you can punch in anywhere.</small>
+ <label>Latency compensation (new recordings): <b id="latv">0</b> ms<br><small>Bluetooth is usually 150–250 ms. Wired is lower. Adjust by ear until the take sits on the beat.</small>
  <input id="lat" type="range" min="0" max="400" step="1" value="0"></label>
  <label>Beat level: <b id="bgv">0</b> dB<input id="bg" type="range" min="-24" max="6" step="0.5" value="0"></label>
  <label>Vocal level: <b id="vgv">0</b> dB<input id="vg" type="range" min="-24" max="12" step="0.5" value="0"></label>
 </div>
 
-<div class="card"><h2>3 · Takes</h2><div id="takes"><span class="mut">No takes yet</span></div></div>
+<div class="card"><h2>3 · Clips on timeline</h2><div id="clips"><span class="mut">No clips yet</span></div><button id="undo">↶ Undo last edit</button></div>
+<div class="card"><h2>Original recordings</h2><small>Raw takes are never changed. Add one back to the timeline anytime.</small><div id="takes"><span class="mut">None yet</span></div></div>
 
-<div class="card"><h2>4 · Export</h2>
+<div class="card"><h2>4 · Vocal engineer (auto)</h2>
+ <small>Measures your recorded vocal, then sets the effects from those measurements. It runs on this phone with no internet. It is measurement-based processing, not a neural-network model.</small>
+ <label>Style (reverb and delay taste)<select id="style" style="width:100%;padding:10px;font-size:16px"><option value="natural">Natural</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="bongo">Bongo Flava / Afro</option></select></label>
+ <button id="auto" class="p">Analyse my vocal &amp; set effects</button>
+ <button id="fxon">Vocal processing: ON (tap to compare dry)</button>
+ <button id="fxundo">↶ Undo auto-set</button>
+ <div id="report"></div>
+ <details><summary>Adjust each effect</summary><div id="fxui"></div></details>
+ <small>Changes apply the next time you press play. A/B levels are not loudness-matched yet (Stage D).</small></div>
+<div class="card"><h2>5 · Export</h2>
  <button id="expmix" class="p">Export full mix (WAV)</button>
- <button id="expvox">Export selected vocal, dry (WAV)</button><div id="dl"></div>
+ <button id="expvox">Export vocal stem, dry (WAV)</button><button id="expfx">Export vocal stem, processed (WAV)</button><div id="dl"></div>
 </div>
 <div id="status">Ready.</div>
 
 <script type="module">
-import {analyse,wavEncode,validateWav,fmtTime} from './dsp.js';
+import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES} from './dsp.js';
 const $=id=>document.getElementById(id);
-const S={ctx:null,beat:null,takes:[],sel:null,live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null};
+const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
+const uid=()=>Date.now()*1000+Math.floor(Math.random()*1000);
 const msg=(t,e)=>{$('status').textContent=t;$('status').className=e?'err':''};
 let db=null;
 try{db=await new Promise((res,rej)=>{const r=indexedDB.open('bms',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){msg('Local storage is unavailable (private mode?). Recordings will NOT be saved. Export them before closing.',1)}
 const kv=(m,k,v)=>new Promise((res,rej)=>{if(!db)return res(null);const tx=db.transaction('kv',m==='get'||m==='all'?'readonly':'readwrite'),s=tx.objectStore('kv');const r=m==='get'?s.get(k):m==='put'?s.put(v,k):m==='del'?s.delete(k):s.getAll();tx.oncomplete=()=>res(r.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)});
 const dec=data=>new OfflineAudioContext(2,1,44100).decodeAudioData(data.slice(0));
-const lat=()=>+$('lat').value, dbv=x=>Math.pow(10,x/20);
+const lat=()=>+$('lat').value, dbv=x=>Math.pow(10,x/20), spb=()=>60/Math.max(40,Math.min(240,+$('bpm').value||90));
 async function ctxReady(){if(!S.ctx)S.ctx=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});if(S.ctx.state!=='running')await S.ctx.resume();return S.ctx}
-// settings
 for(const [id,u] of [['lat','latv'],['bg','bgv'],['vg','vgv']]){const k='bms_'+id;if(localStorage[k]!=null)$(id).value=localStorage[k];$(u).textContent=$(id).value;$(id).oninput=()=>{$(u).textContent=$(id).value;localStorage[k]=$(id).value}}
-// waveform
+if(localStorage.bms_bpm)$('bpm').value=localStorage.bms_bpm;$('bpm').onchange=()=>localStorage.bms_bpm=$('bpm').value;
+const saveClips=()=>kv('put','clips',{kind:'clips',list:S.clips}).catch(e=>msg('Could not save edits: '+e.message,1));
 function peaksOf(buf,n=700){const d=buf.getChannelData(0),step=Math.max(1,Math.floor(d.length/n)),p=new Float32Array(n);for(let i=0;i<n;i++){let m=0;for(let j=i*step;j<Math.min(d.length,(i+1)*step);j++){const a=Math.abs(d[j]);if(a>m)m=a}p[i]=m}return p}
-function draw(pos){const c=$('wave'),g=c.getContext('2d');g.clearRect(0,0,c.width,c.height);if(S.peaks){g.fillStyle='#e8b84a';const h=c.height/2;S.peaks.forEach((v,i)=>g.fillRect(i,h-v*h,1,Math.max(1,v*c.height)))}
- if(pos!=null&&S.beat){const x=Math.min(c.width,pos/S.beat.audio.duration*c.width);g.fillStyle='#fff';g.fillRect(x,0,2,c.height)}}
-// import
+const total=()=>Math.max(8,S.beat?S.beat.audio.duration:0,...S.clips.map(clipEnd));
+function draw(pos){const c=$('wave'),g=c.getContext('2d'),W=c.width,H=c.height,T=total();g.clearRect(0,0,W,H);
+ if(S.peaks){const bw=S.beat.audio.duration/T*W,h=55;g.fillStyle='#8a6d1f';for(let x=0;x<bw;x++){const v=S.peaks[Math.floor(x/bw*S.peaks.length)]||0;g.fillRect(x,h-v*h,1,Math.max(1,v*2*h))}}
+ g.globalAlpha=.85;for(const cl of S.clips){const x=cl.start/T*W,w=Math.max(2,cl.dur/T*W);g.fillStyle=cl.mute?'#555':'#46c37b';g.fillRect(x,130,w,70);if(cl.id===S.selClip){g.globalAlpha=1;g.strokeStyle='#fff';g.lineWidth=3;g.strokeRect(x,130,w,70);g.globalAlpha=.85}}g.globalAlpha=1;
+ g.fillStyle='#e8b84a';g.fillRect(S.cur/T*W,0,3,H);if(pos!=null){g.fillStyle='#fff';g.fillRect(pos/T*W,0,2,H)}
+ $('cur').textContent=`Playhead ${fmtTime(S.cur)}.${Math.floor(S.cur%1*10)} · tap the timeline to move it`}
+$('wave').onclick=e=>{const r=e.target.getBoundingClientRect();S.cur=Math.max(0,(e.clientX-r.left)/r.width*total());draw()};
 $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
- if(S.beat&&S.takes.length&&!confirm('Replace the current beat? Your takes are kept.'))return;
+ if(S.beat&&!confirm('Replace the current beat? Your recordings are kept.'))return;
  try{const data=await f.arrayBuffer(),audio=await dec(data);S.beat={name:f.name,data,audio};S.peaks=peaksOf(audio);
   await kv('put','beat',{kind:'beat',name:f.name,data});$('beatname').textContent=`${f.name} · ${fmtTime(audio.duration)}`;draw();msg('Beat loaded.')}
  catch(err){msg('Could not read that audio file. Try a WAV or MP3. ('+(err.message||err)+')',1)}};
-// transport
-function schedule(c,dest,when,o){const out=[];const mk=(buf,g,off)=>{const s=c.createBufferSource(),n=c.createGain();s.buffer=buf;n.gain.value=g;s.connect(n).connect(dest);s.start(when,off||0);out.push(s);return s};
- let first=null;if(S.beat&&o.beat)first=mk(S.beat.audio,dbv(+$('bg').value));
- const t=S.takes.find(x=>x.id===S.sel);if(t&&o.vocal){const off=lat()/1000;if(off<t.data.length/t.sr){const ab=c.createBuffer(1,t.data.length,t.sr);ab.copyToChannel(t.data,0);mk(ab,dbv(+$('vg').value),off)}}
+// ---- scheduling ----
+const abCache=new WeakMap();
+const bufOf=t=>{let b=abCache.get(t);if(!b){b=new AudioBuffer({length:t.data.length,sampleRate:t.sr,numberOfChannels:1});b.copyToChannel(t.data,0);abCache.set(t,b)}return b};
+function schedule(c,dest,when,o,from=0){const out=[];let first=null;
+ const mk=(buf,g,at,off,dur,to=dest)=>{const s=c.createBufferSource(),n=c.createGain();s.buffer=buf;n.gain.value=g;s.connect(n).connect(to);s.start(at,off,dur);out.push(s);return s};
+ if(S.beat&&o.beat&&from<S.beat.audio.duration)first=mk(S.beat.audio,dbv(+$('bg').value),when,from);
+ let vd=dest;if(o.vocal&&o.fx!==false&&S.fx.on)vd=buildChain(c,dest);if(o.vocal)for(const cl of S.clips){if(cl.mute||clipEnd(cl)<=from+0.001)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
+  const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(cl.dur-skip,t.data.length/t.sr-off);if(dur<=0)continue;mk(bufOf(t),dbv(+$('vg').value),when+Math.max(0,cl.start-from),off,dur,vd)}
  return{out,first}}
+function clicks(c,dest,t0,from,span,cin){const out=[],s=spb();const mk=(t,acc)=>{if(t<c.currentTime)return;const o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.002);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g).connect(dest);o.start(t);o.stop(t+0.06);out.push(o)};
+ for(let k=cin*4;k>=1;k--)mk(t0-k*s,(cin*4-k)%4===0);
+ if($('met').checked){let n=0;for(let k=Math.ceil(from/s-1e-6);k*s<from+span&&n<900;k++,n++)mk(t0+k*s-from,k%4===0)}return out}
 function stopAll(){S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='● RECORD'}
-function loop(){const p=S.ctx.currentTime-S.t0;if(p>=0)draw(p);S.raf=requestAnimationFrame(loop)}
-$('play').onclick=async()=>{if(!S.beat&&!S.sel)return msg('Import a beat or record a take first.',1);stopAll();const c=await ctxReady();S.t0=c.currentTime+0.1;const r=schedule(c,c.destination,S.t0,{beat:1,vocal:1});S.live=r.out;if(r.first)r.first.onended=()=>{stopAll();draw()};loop();msg('Playing…')};
+function loop(){const p=S.ctx.currentTime-S.t0+S.from;if(p>=S.from)draw(p);S.raf=requestAnimationFrame(loop)}
+const spanOf=from=>Math.min(300,(S.beat?S.beat.audio.duration:total())-from);
+$('play').onclick=async()=>{if(!S.beat&&!S.clips.length)return msg('Import a beat or record something first.',1);stopAll();const c=await ctxReady();S.from=S.cur;S.t0=c.currentTime+0.1;
+ const r=schedule(c,c.destination,S.t0,{beat:1,vocal:1},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),0)];if(r.first)r.first.onended=()=>{stopAll();draw()};loop();msg('Playing from playhead…')};
 $('stop').onclick=()=>{if(S.rec)stopRec();else{stopAll();draw();msg('Stopped.')}};
-// recording
+// ---- recording ----
 const WK=`class R extends AudioWorkletProcessor{constructor(){super();this.on=false;this.go=0;this.port.onmessage=e=>{if(e.data&&e.data.go!=null){this.go=e.data.go;this.arm=true}else{this.on=false;this.arm=false;this.port.postMessage('done')}}}process(i){const c=i[0]&&i[0][0];if(this.arm&&currentFrame>=this.go)this.on=true;if(this.on&&c)this.port.postMessage(c.slice(0));return true}}registerProcessor('rec',R)`;
 $('rec').onclick=async()=>{if(S.rec)return stopRec();
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)return msg('This browser cannot record audio. Open this page in Safari or Chrome over HTTPS.',1);
@@ -85,37 +110,93 @@ $('rec').onclick=async()=>{if(S.rec)return stopRec();
   S.node=new AudioWorkletNode(c,'rec',{numberOfOutputs:1,outputChannelCount:[1]});S.chunks=[];
   S.node.port.onmessage=e=>{if(e.data==='done')finish();else S.chunks.push(e.data)};
   const mute=c.createGain();mute.gain.value=0;S.micSrc=c.createMediaStreamSource(S.mic);S.micSrc.connect(S.node);S.node.connect(mute).connect(c.destination);
-  S.t0=c.currentTime+0.15;S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
-  const r=schedule(c,c.destination,S.t0,{beat:1,vocal:0});S.live=r.out;S.rec=true;if(r.first)r.first.onended=()=>S.rec&&stopRec();
-  $('rec').classList.add('on');$('rec').textContent='■ STOP RECORDING';loop();msg('Recording… beat is playing in your headphones.')}
+  const cin=+$('cin').value;S.recFrom=S.from=S.cur;S.t0=c.currentTime+0.15+cin*4*spb();S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
+  const r=schedule(c,c.destination,S.t0,{beat:1,vocal:$('hear').checked},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),cin)];S.rec=true;if(r.first)r.first.onended=()=>S.rec&&stopRec();
+  $('rec').classList.add('on');$('rec').textContent='■ STOP RECORDING';loop();msg(cin?'Count-in… then sing.':'Recording…')}
  catch(err){const n=err&&err.name;msg(n==='NotAllowedError'?'Microphone permission was denied. Allow the microphone for this site in your browser settings, then try again.':n==='NotFoundError'?'No microphone found.':'Could not start recording: '+(err.message||err),1)}};
 function stopRec(){if(!S.rec)return;S.rec=false;S.node.port.postMessage('stop');stopAll();msg('Finishing take…')}
 async function finish(){S.mic.getTracks().forEach(t=>t.stop());S.micSrc.disconnect();S.node.disconnect();
  const n=S.chunks.reduce((a,c)=>a+c.length,0);if(!n)return msg('Nothing was recorded.',1);
  const data=new Float32Array(n);let o=0;for(const c of S.chunks){data.set(c,o);o+=c.length}S.chunks=[];
- const t={kind:'take',id:Date.now(),name:'Take '+(S.takes.length+1),sr:S.ctx.sampleRate,data};S.takes.push(t);S.sel=t.id;
- try{await kv('put','take:'+t.id,t);localStorage.bms_sel=t.id}catch(e){msg('Take recorded but could not be saved to storage: '+e.message,1);renderTakes();return}
- renderTakes();draw();const a=analyse(data);msg(`${t.name} saved · ${fmtTime(n/t.sr)} · peak ${a.peakDb.toFixed(1)} dBFS${a.clipped?' · CLIPPING, re-record quieter':''}${a.silent?' · SILENT, check your mic':''}`,a.clipped||a.silent)}
-function renderTakes(){const el=$('takes');if(!S.takes.length){el.innerHTML='<span class="mut">No takes yet</span>';return}el.innerHTML='';
- for(const t of S.takes){const a=analyse(t.data),d=document.createElement('div');d.className='take'+(t.id===S.sel?' sel':'');
+ const t={kind:'take',id:uid(),name:'Take '+(S.takes.length+1),sr:S.ctx.sampleRate,data},off=lat()/1000,dur=n/t.sr-off;S.takes.push(t);
+ try{await kv('put','take:'+t.id,t)}catch(e){msg('Take recorded but could not be saved to storage: '+e.message,1)}
+ if(dur<0.05){renderAll();return msg('Take too short to place on the timeline.',1)}
+ addClip(t,S.recFrom,off,dur);const a=analyse(data);
+ msg(`${t.name} placed at ${fmtTime(S.recFrom)} · peak ${a.peakDb.toFixed(1)} dBFS${a.clipped?' · CLIPPING, re-record quieter':''}${a.silent?' · SILENT, check your mic':''}`,a.clipped||a.silent)}
+// ---- clip editing ----
+function addClip(t,start,off,dur){push();const c={id:uid(),takeId:t.id,name:t.name,start,off,dur,mute:false};S.clips.push(c);S.selClip=c.id;commit()}
+const push=()=>{S.hist.push(JSON.stringify(S.clips));if(S.hist.length>50)S.hist.shift()};
+function commit(){saveClips();renderAll()}
+function renderAll(){renderClips();renderTakes();draw()}
+function edit(fn){const i=S.clips.findIndex(c=>c.id===S.selClip);if(i<0)return;const r=fn(S.clips[i]);if(!r)return msg('That edit is not possible here. Move the playhead inside the clip.',1);push();S.clips.splice(i,1,...(Array.isArray(r)?r:[r]));commit()}
+$('undo').onclick=()=>{if(!S.hist.length)return msg('Nothing to undo.',1);S.clips=JSON.parse(S.hist.pop());if(!S.clips.find(c=>c.id===S.selClip))S.selClip=null;commit();msg('Undone.')};
+function renderClips(){const el=$('clips');if(!S.clips.length){el.innerHTML='<span class="mut">No clips yet. Record, or add an original recording below.</span>';return}el.innerHTML='';
+ for(const c of S.clips){const d=document.createElement('div');d.className='take'+(c.id===S.selClip?' sel':'');d.style.flexWrap='wrap';
+  d.innerHTML=`<div class="i"><b>${c.name}</b>${c.mute?' <small>(muted)</small>':''}<br><small>starts ${fmtTime(c.start)}.${Math.floor(c.start%1*10)} · length ${c.dur.toFixed(1)} s</small></div>`;
+  const sel=document.createElement('button');sel.textContent=c.id===S.selClip?'Selected':'Select';sel.onclick=()=>{S.selClip=c.id;renderAll()};d.append(sel);
+  if(c.id===S.selClip){const g=document.createElement('div');g.style.cssText='width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px';
+   const B=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.style.width='100%';b.onclick=f;g.append(b)};
+   B('✂ Split at playhead',()=>edit(x=>splitClip(x,S.cur,uid())));B('⇤ Trim start here',()=>edit(x=>trimStart(x,S.cur)));B('⇥ Trim end here',()=>edit(x=>trimEnd(x,S.cur)));B('⧉ Duplicate after',()=>{push();S.clips.push({...c,id:uid(),name:c.name+' copy',start:clipEnd(c)});commit()});
+   B('◀ 100 ms',()=>edit(x=>moveClip(x,-.1)));B('100 ms ▶',()=>edit(x=>moveClip(x,.1)));B('◀ 10 ms',()=>edit(x=>moveClip(x,-.01)));B('10 ms ▶',()=>edit(x=>moveClip(x,.01)));
+   B('⇥ Move to playhead',()=>edit(x=>({...x,start:S.cur})));B(c.mute?'Unmute':'Mute',()=>edit(x=>({...x,mute:!x.mute})));
+   B('✎ Rename',()=>{const n=prompt('Clip name',c.name);if(n)edit(x=>({...x,name:n}))});B('🗑 Remove clip',()=>{if(confirm(`Remove ${c.name} from the timeline? The original recording stays safe below.`)){push();S.clips=S.clips.filter(z=>z.id!==c.id);S.selClip=null;commit()}});
+   d.append(g)}el.append(d)}}
+function renderTakes(){const el=$('takes');if(!S.takes.length){el.innerHTML='<span class="mut">None yet</span>';return}el.innerHTML='';
+ for(const t of S.takes){const a=analyse(t.data),d=document.createElement('div');d.className='take';
   d.innerHTML=`<div class="i"><b>${t.name}</b><br><small>${fmtTime(t.data.length/t.sr)} · peak ${isFinite(a.peakDb)?a.peakDb.toFixed(1):'–∞'} dB${a.clipped?' · ⚠ clipped':''}${a.silent?' · ⚠ silent':''}</small></div>`;
-  const u=document.createElement('button');u.textContent=t.id===S.sel?'✓ Using':'Use';u.onclick=()=>{S.sel=t.id;localStorage.bms_sel=t.id;renderTakes()};
-  const x=document.createElement('button');x.textContent='🗑';x.onclick=async()=>{if(!confirm(`Delete ${t.name}? This cannot be undone.`))return;S.takes=S.takes.filter(z=>z.id!==t.id);await kv('del','take:'+t.id);if(S.sel===t.id)S.sel=S.takes.length?S.takes[S.takes.length-1].id:null;renderTakes()};
+  const u=document.createElement('button');u.textContent='+ Timeline';u.onclick=()=>addClip(t,S.cur,lat()/1000,t.data.length/t.sr-lat()/1000);
+  const x=document.createElement('button');x.textContent='🗑';x.onclick=async()=>{if(!confirm(`Erase ${t.name} forever? Any clips using it will be removed. This cannot be undone.`))return;push();S.takes=S.takes.filter(z=>z.id!==t.id);S.clips=S.clips.filter(c=>c.takeId!==t.id);await kv('del','take:'+t.id);commit()};
   d.append(u,x);el.append(d)}}
-// export
+// ---- vocal chain ----
+const FXD={style:'natural',on:true,en:{hpf:1,eq:1,sib:1,comp:1,rev:1,dly:1},hpf:80,mud:0,pres:0,air:1.5,sib:0,thr:-20,ratio:3,mk:0,rev:.06,dly:0};
+try{S.fx={...FXD,...JSON.parse(localStorage.bms_fx||'{}')};S.fx.en={...FXD.en,...S.fx.en}}catch{S.fx={...FXD}}
+S.fxPrev=null;const saveFx=()=>{localStorage.bms_fx=JSON.stringify(S.fx)};
+function buildChain(c,dest){const P=S.fx,E=P.en,inp=c.createGain();let last=inp;
+ const bq=(t,f,g,q)=>{const n=c.createBiquadFilter();n.type=t;n.frequency.value=f;if(g!=null)n.gain.value=g;if(q)n.Q.value=q;last.connect(n);last=n};
+ if(E.hpf)bq('highpass',P.hpf,null,.707);
+ if(E.eq){if(P.mud)bq('peaking',300,-P.mud,1);if(P.pres)bq('peaking',3000,P.pres,1);if(P.air)bq('highshelf',10000,P.air)}
+ if(E.sib&&P.sib)bq('peaking',7000,-P.sib,2);
+ if(E.comp){const k=c.createDynamicsCompressor();k.threshold.value=P.thr;k.ratio.value=P.ratio;k.knee.value=6;k.attack.value=.01;k.release.value=.15;last.connect(k);last=k;const m=c.createGain();m.gain.value=dbv(P.mk);last.connect(m);last=m}
+ last.connect(dest);
+ if(E.rev&&P.rev>0){const n=Math.floor(c.sampleRate*1.4),ir=c.createBuffer(2,n,c.sampleRate);for(let ch=0;ch<2;ch++){const d=ir.getChannelData(ch);for(let i=0;i<n;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3)}const cv=c.createConvolver();cv.buffer=ir;const g=c.createGain();g.gain.value=P.rev*.6;last.connect(cv);cv.connect(g).connect(dest)}
+ if(E.dly&&P.dly>0){const d=c.createDelay(2),fb=c.createGain(),lp=c.createBiquadFilter(),g=c.createGain();d.delayTime.value=spb()/2;fb.gain.value=.3;lp.type='lowpass';lp.frequency.value=3000;g.gain.value=P.dly;last.connect(d);d.connect(lp);lp.connect(fb);fb.connect(d);lp.connect(g).connect(dest)}
+ return inp}
+const SL=[['hpf','High-pass (Hz)',40,200,1],['mud','Mud cut at 300 Hz (dB)',0,8,.5],['pres','Presence at 3 kHz (dB)',-6,6,.5],['air','Air above 10 kHz (dB)',0,6,.5],['sib','Sibilance cut at 7 kHz (dB)',0,8,.5],['thr','Compressor threshold (dB)',-50,-5,1],['ratio','Compressor ratio',1,10,.5],['mk','Makeup gain (dB)',0,12,.5],['rev','Reverb amount',0,.5,.01],['dly','Delay amount (1/8 note)',0,.5,.01]];
+const EN=[['hpf','High-pass'],['eq','EQ'],['sib','Sibilance cut'],['comp','Compressor'],['rev','Reverb'],['dly','Delay']];
+function renderFx(){$('style').value=S.fx.style;$('fxon').textContent='Vocal processing: '+(S.fx.on?'ON (tap to hear dry)':'OFF – hearing dry (tap to switch on)');
+ const u=$('fxui');u.innerHTML='';const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:4px';
+ for(const [k,l] of EN){const lb=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.checked=!!S.fx.en[k];cb.onchange=()=>{S.fx.en[k]=cb.checked?1:0;saveFx()};lb.append(cb,' '+l);row.append(lb)}u.append(row);
+ for(const [k,l,mn,mx,st] of SL){const lb=document.createElement('label'),b=document.createElement('b'),r=document.createElement('input');b.textContent=S.fx[k];lb.append(l+': ',b);r.type='range';r.min=mn;r.max=mx;r.step=st;r.value=S.fx[k];r.oninput=()=>{S.fx[k]=+r.value;b.textContent=r.value;saveFx()};lb.append(r);u.append(lb)}}
+$('style').onchange=()=>{S.fx.style=$('style').value;saveFx()};
+$('fxon').onclick=()=>{S.fx.on=!S.fx.on;saveFx();renderFx()};
+$('fxundo').onclick=()=>{if(!S.fxPrev)return msg('Nothing to undo.',1);S.fx=S.fxPrev;S.fxPrev=null;saveFx();renderFx();$('report').innerHTML='';msg('Auto-set undone.')};
+$('auto').onclick=()=>{const segs=[];let sr=0;for(const cl of S.clips){if(cl.mute)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;if(!sr)sr=t.sr;if(t.sr!==sr)continue;segs.push(t.data.subarray(Math.round(cl.off*sr),Math.round((cl.off+cl.dur)*sr)))}
+ if(!segs.length)return msg('Record a vocal first, then analyse it.',1);
+ const n=segs.reduce((a,s)=>a+s.length,0),x=new Float32Array(n);let o=0;for(const s of segs){x.set(s,o);o+=s.length}
+ const a=analyseVocal(x,sr);if(a.silent)return msg('The vocal is silent or too quiet to analyse. Check your mic and re-record.',1);
+ const {p,notes}=decide(a,$('style').value);S.fxPrev=JSON.parse(JSON.stringify(S.fx));Object.assign(S.fx,p,{style:$('style').value,on:true});saveFx();renderFx();
+ const tag={measured:'📏 Measured',choice:'🎛 Style choice',warn:'⚠ Warning'};
+ $('report').innerHTML=`<div class="take" style="display:block"><b>Measured</b><br><small>Peak ${a.peakDb.toFixed(1)} dBFS · level ${a.rmsDb.toFixed(1)} dB · noise floor ${a.noiseFloorDb.toFixed(1)} dB · dynamic range ${a.dynRangeDb.toFixed(0)} dB</small></div>`+notes.map(([k,t])=>`<div class="take" style="display:block"><small>${tag[k]}</small><br>${t}</div>`).join('');
+ msg('Effects set from your vocal. Press play to listen, and use the ON/OFF button to compare. Thresholds are starting points, so adjust by ear.')};
+renderFx();
+// ---- export ----
 function offer(buf,name){const url=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));$('dl').innerHTML=`<a href="${url}" download="${name}">⬇ Tap to save ${name}</a>`}
-$('expmix').onclick=async()=>{try{const t=S.takes.find(x=>x.id===S.sel);if(!S.beat&&!t)return msg('Nothing to export yet.',1);msg('Rendering…');
- const sr=44100,off=lat()/1000,dur=Math.max(S.beat?S.beat.audio.duration:0,t?t.data.length/t.sr-off:0),oc=new OfflineAudioContext(2,Math.ceil(dur*sr),sr);
- schedule(oc,oc.destination,0,{beat:1,vocal:1});const r=await oc.startRendering();
+async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!c.mute))return msg('Nothing to export yet.',1);msg('Rendering…');
+ const sr=44100,dur=Math.max(o.beat&&S.beat?S.beat.audio.duration:0,...S.clips.filter(c=>!c.mute).map(clipEnd)),oc=new OfflineAudioContext(2,Math.ceil(dur*sr),sr);
+ schedule(oc,oc.destination,0,o,0);const r=await oc.startRendering();
  const ch=[r.getChannelData(0),r.getChannelData(1)],a=analyse(ch[0]),b=analyse(ch[1]),pk=Math.max(a.peak,b.peak);
- if(a.silent&&b.silent)return msg('Export failed: the rendered mix is silent. Nothing was saved.',1);
- let note='';if(pk>0.891){const g=0.891/pk;ch.forEach(c=>{for(let i=0;i<c.length;i++)c[i]*=g});note=` Mix peaked at ${(20*Math.log10(pk)).toFixed(1)} dB, so it was lowered to −1 dBFS to avoid clipping.`}
+ if(a.silent&&b.silent)return msg('Export failed: the rendered audio is silent. Nothing was saved.',1);
+ let note='';if(pk>0.891){const g=0.891/pk;ch.forEach(c=>{for(let i=0;i<c.length;i++)c[i]*=g});note=` It peaked at ${(20*Math.log10(pk)).toFixed(1)} dB, so it was lowered to −1 dBFS to avoid clipping.`}
  const ab=wavEncode(ch,sr),v=validateWav(ab);if(!v.ok||v.frames!==r.length||v.ch!==2||v.sr!==sr)return msg('Export validation failed. File not offered.',1);
- offer(ab,'black-mzungu-mix.wav');msg(`Mix ready & verified: ${fmtTime(dur)}, ${sr} Hz, stereo, 16-bit.${note}`)}catch(e){msg('Export failed: '+(e.message||e),1)}};
-$('expvox').onclick=()=>{const t=S.takes.find(x=>x.id===S.sel);if(!t)return msg('Record a take first.',1);const s=Math.min(t.data.length-1,Math.round(lat()/1000*t.sr)),d=t.data.subarray(s);
- if(analyse(d).silent)return msg('That take is silent. Not exported.',1);const ab=wavEncode([d],t.sr),v=validateWav(ab);if(!v.ok||v.frames!==d.length)return msg('Export validation failed.',1);
- offer(ab,'black-mzungu-vocal-dry.wav');msg(`Dry vocal verified: ${fmtTime(d.length/t.sr)}, ${t.sr} Hz, mono. Aligned to the beat start.`)};
-// restore
-try{const all=await kv('all');for(const v of all||[]){if(v.kind==='beat'){S.beat={name:v.name,data:v.data,audio:await dec(v.data)};S.peaks=peaksOf(S.beat.audio);$('beatname').textContent=`${v.name} · ${fmtTime(S.beat.audio.duration)}`}else if(v.kind==='take')S.takes.push(v)}
- S.takes.sort((a,b)=>a.id-b.id);S.sel=S.takes.find(t=>t.id==localStorage.bms_sel)?+localStorage.bms_sel:(S.takes.length?S.takes[S.takes.length-1].id:null);renderTakes();draw();if(S.beat||S.takes.length)msg('Previous session restored.')}catch(e){msg('Could not restore saved data: '+e.message,1)}
+ offer(ab,name);msg(`${label} ready & verified: ${fmtTime(dur)}, ${sr} Hz, stereo, 16-bit. Starts at timeline 0:00.${note}`)}catch(e){msg('Export failed: '+(e.message||e),1)}}
+$('expmix').onclick=()=>render({beat:1,vocal:1},'black-mzungu-mix.wav','Mix');
+$('expvox').onclick=()=>render({beat:0,vocal:1,fx:false},'black-mzungu-vocal-stem-dry.wav','Dry vocal stem');
+$('expfx').onclick=()=>render({beat:0,vocal:1,fx:true},'black-mzungu-vocal-stem-processed.wav','Processed vocal stem');
+// ---- restore ----
+try{const all=await kv('all');let list=null;
+ for(const v of all||[]){if(v.kind==='beat'){S.beat={name:v.name,data:v.data,audio:await dec(v.data)};S.peaks=peaksOf(S.beat.audio);$('beatname').textContent=`${v.name} · ${fmtTime(S.beat.audio.duration)}`}else if(v.kind==='take')S.takes.push(v);else if(v.kind==='clips')list=v.list}
+ S.takes.sort((a,b)=>a.id-b.id);
+ if(list)S.clips=list.filter(c=>S.takes.some(t=>t.id===c.takeId));
+ else if(S.takes.length){S.clips=S.takes.map(t=>({id:uid(),takeId:t.id,name:t.name,start:0,off:lat()/1000,dur:Math.max(0.05,t.data.length/t.sr-lat()/1000),mute:false}));saveClips()}
+ S.selClip=S.clips.length?S.clips[0].id:null;renderAll();if(S.beat||S.takes.length)msg('Previous session restored.')}catch(e){msg('Could not restore saved data: '+e.message,1)}
 </script></body></html>
