@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: black-mzungu-studio
+    runtime: static
+    buildCommand: echo "static site, no build"
+    staticPublishPath: .
