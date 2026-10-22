@@ -18,20 +18,29 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
 #status{position:sticky;bottom:0;background:#101015;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
 #status.err{border-color:var(--rec);color:#ffb4b6}#dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
 </style></head><body>
-<h1>BLACK MZUNGU STUDIO</h1><small>Stage D+ · meters, devices, fades, gate · private, everything stays on this device</small>
+<h1>BLACK MZUNGU STUDIO</h1><small>Stage E · presets, pitch, beat maker, backup, MP3 · private, everything stays on this device</small>
 
 <div class="card"><h2>1 · Beat</h2>
  <label class="btn" for="file">Import beat (WAV / MP3 / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden>
  <div id="beatname" class="mut">No beat loaded</div><canvas id="wave" width="700" height="210"></canvas><div class="mut" id="cur">Playhead 0:00.0 · tap the timeline to move it</div>
 </div>
 
+<div class="card"><h2>1b · Beat maker</h2>
+ <small>Makes a beat from simple synthesised sounds using a step pattern. It is rule-based, not generative AI, and uses no samples. Tap squares to edit the pattern.</small>
+ <label>Genre<select id="genre" style="width:100%;padding:10px;font-size:16px"><option value="afrobeats">Afrobeats</option><option value="amapiano">Amapiano</option><option value="bongoflava">Bongo Flava</option><option value="melodicrap">Melodic rap</option><option value="rnb">R&amp;B</option></select></label>
+ <div class="row"><label>Key<select id="bkey" style="width:100%;padding:10px;font-size:16px"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select></label><label>Scale<select id="bscale" style="width:100%;padding:10px;font-size:16px"><option value="minor">Minor</option><option value="major">Major</option></select></label></div>
+ <div class="row"><label>Length<select id="bars" style="width:100%;padding:10px;font-size:16px"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
+ <small>Tempo uses the BPM in the Record section.</small><div id="grid"></div>
+ <button id="mkbeat" class="p">Make beat &amp; use it</button></div>
 <div class="card"><h2>2 · Record</h2>
  <small>Use headphones. Mic monitoring is off, so no feedback. Echo cancel, noise suppression and auto-gain are switched off for clean audio.</small>
  <label>Microphone / audio interface<select id="dev" style="width:100%;padding:10px;font-size:16px"><option value="">Default microphone</option></select></label>
  <button id="mictest">🎚 Test mic &amp; show meters</button><canvas id="meter" width="700" height="150"></canvas><div id="peak" class="mut">Meters are off. Tap “Test mic”, or start recording.</div>
  <button id="rec" class="rec">● RECORD</button>
  <div class="row"><button id="play">▶ Play from playhead</button><button id="stop">■ Stop</button></div>
- <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:10px;font-size:16px"></label><label>Count-in<select id="cin" style="width:100%;padding:10px;font-size:16px"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div><label><input type="checkbox" id="met" checked> Metronome on</label><br><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><small><br>Recording starts at the playhead, so you can punch in anywhere.</small>
+ <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:10px;font-size:16px"></label><label>Count-in<select id="cin" style="width:100%;padding:10px;font-size:16px"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div><label><input type="checkbox" id="met" checked> Metronome on</label><br><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><br>
+ <label><input type="checkbox" id="loopon"> Loop playback (not used while recording)</label>
+ <div class="row"><button id="loopa">Loop start = playhead</button><button id="loopb">Loop end = playhead</button></div><div id="looptxt" class="mut">Move the playhead, then set loop start and end.</div><small><br>Recording starts at the playhead, so you can punch in anywhere.</small>
  <label>Latency compensation (new recordings): <b id="latv">0</b> ms<br><small>Bluetooth is usually 150–250 ms. Wired is lower. Adjust by ear until the take sits on the beat.</small>
  <input id="lat" type="range" min="0" max="400" step="1" value="0"></label>
  <label>Beat level: <b id="bgv">0</b> dB<input id="bg" type="range" min="-24" max="6" step="0.5" value="0"></label>
@@ -44,6 +53,11 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
 <div class="card"><h2>4 · Vocal engineer (auto)</h2>
  <small>Measures your recorded vocal, then sets the effects from those measurements. It runs on this phone with no internet. It is measurement-based processing, not a neural-network model.</small>
  <label>Style (reverb and delay taste)<select id="style" style="width:100%;padding:10px;font-size:16px"><option value="natural">Natural</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="bongo">Bongo Flava / Afro</option></select></label>
+ <label>Presets (starting points)<select id="preset" style="width:100%;padding:10px;font-size:16px"></select></label>
+ <div class="row"><button id="presapply">Apply</button><button id="pressave">Save mine</button><button id="presdel">Delete mine</button></div>
+ <label><input type="checkbox" id="pcon"> Pitch correction (experimental, best on clean solo vocals)</label>
+ <div class="row"><select id="pckey" style="padding:10px;font-size:16px"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select><select id="pcscale" style="padding:10px;font-size:16px"><option value="major">Major</option><option value="minor">Minor</option><option value="chromatic">Chromatic</option></select></div>
+ <label>Strength <b id="pcv">100</b>%<input id="pcstr" type="range" min="0" max="100" value="100"></label>
  <button id="auto" class="p">Analyse my vocal &amp; set effects</button>
  <button id="fxon">Vocal processing: ON (tap to compare dry)</button>
  <button id="fxundo">↶ Undo auto-set</button>
@@ -58,13 +72,18 @@ canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:bloc
  <button id="expmast" class="p">Master &amp; export (WAV)</button>
  <small>Mastering = loudness target + lookahead limiter, with a −1 dBTP true-peak ceiling. It will not squash the mix harder than about 5 dB of limiting, so it may land a little under the target instead. It runs on this phone, so keep this screen open.</small></div>
 <div class="card"><h2>6 · Export</h2>
+ <label>File type<select id="fmt" style="width:100%;padding:10px;font-size:16px"><option value="wav">WAV (best quality)</option><option value="192">MP3 192 kbps</option><option value="320">MP3 320 kbps</option></select></label>
  <button id="expmix" class="p">Export full mix (WAV)</button>
  <button id="expvox">Export vocal stem, dry (WAV)</button><button id="expfx">Export vocal stem, processed (WAV)</button><div id="dl"></div>
+ <button id="bk">Download project backup (.bms)</button>
+ <label class="btn" for="rs">Restore from backup (.bms)</label><input id="rs" type="file" accept=".bms,application/octet-stream" hidden>
 </div>
 <div id="status">Ready.</div>
 
+<script src="lame.min.js"></script>
 <script type="module">
-import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio} from './dsp.js';
+import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio,pitchCorrect,PRESETS,packProject,unpackProject} from './dsp.js';
+import {renderBeat,GENRES,ROWS} from './beat.js';
 const $=id=>document.getElementById(id);
 const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
 const uid=()=>Date.now()*1000+Math.floor(Math.random()*1000);
@@ -95,22 +114,25 @@ $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  catch(err){msg(`Could not read "${f.name}" (${(f.size/1048576).toFixed(1)} MB). ${err&&err.message?err.message:'Decode failed'}. Try a smaller file, or convert it to WAV or a standard MP3 (44.1 or 48 kHz).`,1)}};
 // ---- scheduling ----
 const abCache=new WeakMap();
-const bufOf=(t,gated)=>{let m=abCache.get(t);if(!m){m=new Map();abCache.set(t,m)}const k=gated?`g${S.fx.gate}_${S.fx.gdepth}`:'raw';let b=m.get(k);if(!b){for(const kk of [...m.keys()])if(kk[0]==='g'&&kk!==k)m.delete(kk);const d=gated?gateAudio(t.data,t.sr,S.fx.gate,S.fx.gdepth):t.data;b=new AudioBuffer({length:d.length,sampleRate:t.sr,numberOfChannels:1});b.copyToChannel(d,0);m.set(k,b)}return b}
-function schedule(c,dest,when,o,from=0){const out=[];let first=null;
+const bufOf=(t,gated,pc)=>{let m=abCache.get(t);if(!m){m=new Map();abCache.set(t,m)}const k=(gated?`g${S.fx.gate}_${S.fx.gdepth}`:'')+(pc?`|p${S.fx.pcKey}${S.fx.pcScale}${S.fx.pcStr}`:'')||'raw';let b=m.get(k);if(!b){if(m.size>=3)m.delete(m.keys().next().value);let d=t.data;if(gated)d=gateAudio(d,t.sr,S.fx.gate,S.fx.gdepth);if(pc)d=pitchCorrect(d,t.sr,{key:S.fx.pcKey,scale:S.fx.pcScale,strength:S.fx.pcStr});b=new AudioBuffer({length:d.length,sampleRate:t.sr,numberOfChannels:1});b.copyToChannel(d,0);m.set(k,b)}return b}
+function prep(){if(!S.fx.on)return;for(const cl of S.clips){if(cl.mute)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(t)bufOf(t,!!S.fx.en.gate,!!S.fx.pcOn)}}
+function schedule(c,dest,when,o,from=0,to=Infinity){const out=[];let first=null;
  const mk=(buf,g,at,off,dur,to=dest)=>{const s=c.createBufferSource(),n=c.createGain();s.buffer=buf;n.gain.value=g;s.connect(n).connect(to);s.start(at,off,dur);s._g=n;out.push(s);return s};
- if(S.beat&&o.beat&&from<S.beat.audio.duration){let bb=dest;if(S.dip>0){bb=c.createBiquadFilter();bb.type='peaking';bb.frequency.value=3000;bb.Q.value=1;bb.gain.value=-S.dip;bb.connect(dest)}first=mk(S.beat.audio,dbv(+$('bg').value),when,from,undefined,bb)}
- let vd=dest;if(o.vocal&&o.fx!==false&&S.fx.on)vd=buildChain(c,dest);if(o.vocal)for(const cl of S.clips){if(cl.mute||clipEnd(cl)<=from+0.001)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
-  const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(cl.dur-skip,t.data.length/t.sr-off);if(dur<=0)continue;const at=when+Math.max(0,cl.start-from),gA=dbv(+$('vg').value+(cl.gain||0)),fi=cl.fadeIn||0,fo=cl.fadeOut||0,src=mk(bufOf(t,o.fx!==false&&S.fx.on&&S.fx.en.gate),gA,at,off,dur,vd);
+ if(S.beat&&o.beat&&from<S.beat.audio.duration){let bb=dest;if(S.dip>0){bb=c.createBiquadFilter();bb.type='peaking';bb.frequency.value=3000;bb.Q.value=1;bb.gain.value=-S.dip;bb.connect(dest)}first=mk(S.beat.audio,dbv(+$('bg').value),when,from,Math.min(to,S.beat.audio.duration)-from,bb)}
+ const fxo=o.fx!==false&&S.fx.on;let vd=dest;if(o.vocal&&fxo)vd=buildChain(c,dest);if(o.vocal)for(const cl of S.clips){if(cl.mute||clipEnd(cl)<=from+0.001||cl.start>=to)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
+  const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(Math.min(clipEnd(cl),to)-cl.start-skip,t.data.length/t.sr-off);if(dur<=0)continue;const at=when+Math.max(0,cl.start-from),gA=dbv(+$('vg').value+(cl.gain||0)),fi=cl.fadeIn||0,fo=cl.fadeOut||0,src=mk(bufOf(t,fxo&&S.fx.en.gate,fxo&&S.fx.pcOn),gA,at,off,dur,vd);
   if(fi>0||fo>0){const N=64,cv=new Float32Array(N);for(let k=0;k<N;k++){const tt=skip+dur*k/(N-1);cv[k]=gA*Math.max(0,Math.min(1,fi?tt/fi:1,fo?(cl.dur-tt)/fo:1))}src._g.gain.setValueCurveAtTime(cv,at,dur)}}
  return{out,first}}
 function clicks(c,dest,t0,from,span,cin){const out=[],s=spb();const mk=(t,acc)=>{if(t<c.currentTime)return;const o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.002);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g).connect(dest);o.start(t);o.stop(t+0.06);out.push(o)};
  for(let k=cin*4;k>=1;k--)mk(t0-k*s,(cin*4-k)%4===0);
  if($('met').checked){let n=0;for(let k=Math.ceil(from/s-1e-6);k*s<from+span&&n<900;k++,n++)mk(t0+k*s-from,k%4===0)}return out}
 function stopAll(){S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='● RECORD'}
-function loop(){const p=S.ctx.currentTime-S.t0+S.from;if(p>=S.from)draw(p);S.raf=requestAnimationFrame(loop)}
+function loop(){let p=S.ctx.currentTime-S.t0;if(S.loopLen&&p>0)p%=S.loopLen;p+=S.from;if(p>=S.from)draw(p);S.raf=requestAnimationFrame(loop)}
 const spanOf=from=>Math.min(300,(S.beat?S.beat.audio.duration:total())-from);
-$('play').onclick=async()=>{if(!S.beat&&!S.clips.length)return msg('Import a beat or record something first.',1);stopAll();const c=await ctxReady();S.from=S.cur;S.t0=c.currentTime+0.1;
- const r=schedule(c,c.destination,S.t0,{beat:1,vocal:1},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),0)];if(r.first)r.first.onended=()=>{stopAll();draw()};loop();msg('Playing from playhead…')};
+$('play').onclick=async()=>{if(!S.beat&&!S.clips.length)return msg('Import a beat or record something first.',1);stopAll();const c=await ctxReady();
+ if($('loopon').checked&&S.loop.b>S.loop.a+0.2){S.from=S.loop.a;S.loopLen=S.loop.b-S.loop.a;msg('Preparing…');prep();S.t0=c.currentTime+0.1;S.live=[];const reps=Math.min(60,Math.ceil(600/S.loopLen));
+  for(let k=0;k<reps;k++){const t=S.t0+k*S.loopLen,r=schedule(c,c.destination,t,{beat:1,vocal:1},S.loop.a,S.loop.b);S.live.push(...r.out,...clicks(c,c.destination,t,S.loop.a,S.loopLen,0))}loop();return msg('Looping. Tap Stop to end.')}
+ S.loopLen=0;S.from=S.cur;prep();S.t0=c.currentTime+0.1;const r=schedule(c,c.destination,S.t0,{beat:1,vocal:1},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),0)];if(r.first)r.first.onended=()=>{stopAll();draw()};loop();msg('Playing from playhead…')};
 $('stop').onclick=()=>{if(S.rec)stopRec();else{stopAll();draw();msg('Stopped.')}};
 // ---- recording ----
 const WK=`class R extends AudioWorkletProcessor{constructor(){super();this.on=false;this.go=0;this.port.onmessage=e=>{if(e.data&&e.data.go!=null){this.go=e.data.go;this.arm=true}else{this.on=false;this.arm=false;this.port.postMessage('done')}}}process(i){const c=i[0]&&i[0][0];if(this.arm&&currentFrame>=this.go)this.on=true;if(this.on&&c)this.port.postMessage(c.slice(0));return true}}registerProcessor('rec',R)`;
@@ -122,7 +144,7 @@ $('rec').onclick=async()=>{if(S.rec)return stopRec();
   S.node=new AudioWorkletNode(c,'rec',{numberOfOutputs:1,outputChannelCount:[1]});S.chunks=[];
   S.node.port.onmessage=e=>{if(e.data==='done')finish();else S.chunks.push(e.data)};
   const mute=c.createGain();mute.gain.value=0;S.micSrc=c.createMediaStreamSource(S.mic);S.micSrc.connect(S.node);meterOn(c,S.micSrc);S.node.connect(mute).connect(c.destination);
-  const cin=+$('cin').value;S.recFrom=S.from=S.cur;S.t0=c.currentTime+0.15+cin*4*spb();S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
+  const cin=+$('cin').value;S.loopLen=0;S.recFrom=S.from=S.cur;prep();S.t0=c.currentTime+0.15+cin*4*spb();S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
   const r=schedule(c,c.destination,S.t0,{beat:1,vocal:$('hear').checked},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),cin)];S.rec=true;if(r.first)r.first.onended=()=>S.rec&&stopRec();
   $('rec').classList.add('on');$('rec').textContent='■ STOP RECORDING';loop();msg(cin?'Count-in… then sing.':'Recording…')}
  catch(err){micErr(err)}};
@@ -179,7 +201,7 @@ function meterOff(){cancelAnimationFrame(M.raf);try{M.an&&M.an.disconnect();M.mu
 $('mictest').onclick=async()=>{if(M.test)return stopTest();try{const c=await ctxReady();M.stream=await navigator.mediaDevices.getUserMedia(micC());listDevs();M.src=c.createMediaStreamSource(M.stream);meterOn(c,M.src);M.test=true;$('mictest').textContent='■ Stop mic test';msg('Speak or sing. Nothing is played back, so there is no feedback.')}catch(e){micErr(e)}};
 function stopTest(){meterOff();M.stream&&M.stream.getTracks().forEach(t=>t.stop());try{M.src&&M.src.disconnect()}catch{}M.test=false;$('mictest').textContent='🎚 Test mic & show meters'}
 // ---- vocal chain ----
-const FXD={style:'natural',on:true,en:{hpf:1,eq:1,sib:1,comp:1,rev:1,dly:1,gate:0},gate:-55,gdepth:15,hpf:80,mud:0,pres:0,air:1.5,sib:0,thr:-20,ratio:3,mk:0,rev:.06,dly:0};
+const FXD={style:'natural',on:true,pcOn:0,pcKey:0,pcScale:'major',pcStr:1,en:{hpf:1,eq:1,sib:1,comp:1,rev:1,dly:1,gate:0},gate:-55,gdepth:15,hpf:80,mud:0,pres:0,air:1.5,sib:0,thr:-20,ratio:3,mk:0,rev:.06,dly:0};
 try{S.fx={...FXD,...JSON.parse(localStorage.bms_fx||'{}')};S.fx.en={...FXD.en,...S.fx.en}}catch{S.fx={...FXD}}
 S.fxPrev=null;const saveFx=()=>{localStorage.bms_fx=JSON.stringify(S.fx)};
 function buildChain(c,dest){const P=S.fx,E=P.en,inp=c.createGain();let last=inp;
@@ -194,7 +216,7 @@ function buildChain(c,dest){const P=S.fx,E=P.en,inp=c.createGain();let last=inp;
  return inp}
 const SL=[['hpf','High-pass (Hz)',40,200,1],['mud','Mud cut at 300 Hz (dB)',0,8,.5],['pres','Presence at 3 kHz (dB)',-6,6,.5],['air','Air above 10 kHz (dB)',0,6,.5],['sib','Sibilance cut at 7 kHz (dB)',0,8,.5],['thr','Compressor threshold (dB)',-50,-5,1],['ratio','Compressor ratio',1,10,.5],['mk','Makeup gain (dB)',0,12,.5],['gate','Gate threshold (dB)',-80,-20,1],['gdepth','Gate depth (dB)',3,30,1],['rev','Reverb amount',0,.5,.01],['dly','Delay amount (1/8 note)',0,.5,.01]];
 const EN=[['hpf','High-pass'],['eq','EQ'],['sib','Sibilance cut'],['comp','Compressor'],['rev','Reverb'],['dly','Delay'],['gate','Noise gate']];
-function renderFx(){$('style').value=S.fx.style;$('fxon').textContent='Vocal processing: '+(S.fx.on?'ON (tap to hear dry)':'OFF – hearing dry (tap to switch on)');
+function renderFx(){renderPc();renderPresets();$('style').value=S.fx.style;$('fxon').textContent='Vocal processing: '+(S.fx.on?'ON (tap to hear dry)':'OFF – hearing dry (tap to switch on)');
  const u=$('fxui');u.innerHTML='';const row=document.createElement('div');row.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:4px';
  for(const [k,l] of EN){const lb=document.createElement('label'),cb=document.createElement('input');cb.type='checkbox';cb.checked=!!S.fx.en[k];cb.onchange=()=>{S.fx.en[k]=cb.checked?1:0;saveFx()};lb.append(cb,' '+l);row.append(lb)}u.append(row);
  for(const [k,l,mn,mx,st] of SL){const lb=document.createElement('label'),b=document.createElement('b'),r=document.createElement('input');b.textContent=S.fx[k];lb.append(l+': ',b);r.type='range';r.min=mn;r.max=mx;r.step=st;r.value=S.fx[k];r.oninput=()=>{S.fx[k]=+r.value;b.textContent=r.value;saveFx()};lb.append(r);u.append(lb)}}
@@ -230,23 +252,69 @@ $('expmast').onclick=async()=>{try{if(!S.beat&&!S.clips.some(c=>!c.mute))return 
  msg('Mastering… this can take a minute on a phone. Keep this screen open.');await wait();
  const R=await renderRaw({beat:1,vocal:1,fx:true});await wait();const T=TARGETS[$('target').value],res=master(R.ch,R.sr,T);
  if(analyse(res.chs[0]).silent&&analyse(res.chs[1]).silent)return msg('Mastering produced silence. Nothing was saved.',1);
- const ab=wavEncode(res.chs,R.sr),v=validateWav(ab);if(!v.ok||v.frames!==R.ch[0].length||v.ch!==2||v.sr!==R.sr)return msg('Export validation failed. File not offered.',1);
- offer(ab,'black-mzungu-master-'+$('target').value+'.wav');
+ const pk2=pack(res.chs,R.sr,'black-mzungu-master-'+$('target').value);if(!pk2)return msg('Export validation failed. File not offered.',1);
+ offer(pk2.ab,pk2.name,pk2.mime);
  const gained=res.gainDb>=0?`raised ${res.gainDb.toFixed(1)} dB`:`lowered ${Math.abs(res.gainDb).toFixed(1)} dB`;
- msg(`Master ready & verified: ${fmtTime(R.dur)}, stereo, 16-bit. Loudness ${res.before.integrated.toFixed(1)} → ${res.after.integrated.toFixed(1)} LUFS (target ${T.lufs}), level ${gained}, limiter worked up to ${res.maxGrDb.toFixed(1)} dB, true peak ${res.tpDb.toFixed(1)} dBTP.${res.reached?'':' It stopped short of the target because reaching it would need harder limiting than is good for the sound.'}`)}catch(e){msg('Mastering failed: '+(e.message||e),1)}};
+ msg(`Master ready & verified: ${fmtTime(R.dur)}, stereo, ${pk2.info}. Loudness ${res.before.integrated.toFixed(1)} → ${res.after.integrated.toFixed(1)} LUFS (target ${T.lufs}), level ${gained}, limiter worked up to ${res.maxGrDb.toFixed(1)} dB, true peak ${res.tpDb.toFixed(1)} dBTP.${res.reached?'':' It stopped short of the target because reaching it would need harder limiting than is good for the sound.'}`)}catch(e){msg('Mastering failed: '+(e.message||e),1)}};
+// ---- presets, pitch UI, loop, beat maker, backup, mp3 ----
+const tf=s=>`${fmtTime(s)}.${Math.floor(s%1*10)}`;
+const customP=()=>{try{return JSON.parse(localStorage.bms_presets||'{}')}catch{return{}}};
+const PKEYS=['hpf','mud','pres','air','sib','thr','ratio','mk','rev','dly','gate','gdepth'];
+function renderPresets(){const sel=$('preset'),cur=sel.value,all={...PRESETS,...customP()};sel.innerHTML=Object.keys(all).map(n=>`<option>${n}</option>`).join('');if(all[cur])sel.value=cur}
+$('presapply').onclick=()=>{const p={...PRESETS,...customP()}[$('preset').value];if(!p)return;S.fxPrev=JSON.parse(JSON.stringify(S.fx));Object.assign(S.fx,p,{on:true});saveFx();renderFx();msg(`Preset “${$('preset').value}” applied. It is a starting point, so adjust by ear. Press play to hear it. “Undo auto-set” goes back.`)};
+$('pressave').onclick=()=>{const n=(prompt('Name for your preset')||'').trim();if(!n)return;if(PRESETS[n])return msg('That name is used by a built-in preset. Choose another name.',1);const c=customP(),p={};for(const k of PKEYS)p[k]=S.fx[k];c[n]=p;localStorage.bms_presets=JSON.stringify(c);renderPresets();$('preset').value=n;msg(`Saved “${n}”. It will be here in every project on this device.`)};
+$('presdel').onclick=()=>{const n=$('preset').value,c=customP();if(!c[n])return msg('Only your own presets can be deleted.',1);if(!confirm(`Delete your preset “${n}”?`))return;delete c[n];localStorage.bms_presets=JSON.stringify(c);renderPresets();msg('Deleted.')};
+function renderPc(){$('pcon').checked=!!S.fx.pcOn;$('pckey').value=S.fx.pcKey;$('pcscale').value=S.fx.pcScale;$('pcstr').value=Math.round(S.fx.pcStr*100);$('pcv').textContent=Math.round(S.fx.pcStr*100)}
+$('pcon').onchange=()=>{S.fx.pcOn=$('pcon').checked?1:0;saveFx();if(S.fx.pcOn)msg('Pitch correction is on. It is prepared when you press play, which can take a few seconds.')};
+$('pckey').onchange=()=>{S.fx.pcKey=+$('pckey').value;saveFx()};$('pcscale').onchange=()=>{S.fx.pcScale=$('pcscale').value;saveFx()};
+$('pcstr').oninput=()=>{S.fx.pcStr=+$('pcstr').value/100;$('pcv').textContent=$('pcstr').value;saveFx()};
+S.loop={a:0,b:0};S.loopLen=0;
+const lt=()=>{$('looptxt').textContent=S.loop.b>S.loop.a?`Loop ${tf(S.loop.a)} to ${tf(S.loop.b)} (${(S.loop.b-S.loop.a).toFixed(1)} s)`:'Move the playhead, then set loop start and end.'};
+$('loopa').onclick=()=>{S.loop.a=S.cur;lt()};$('loopb').onclick=()=>{S.loop.b=S.cur;lt();if(S.loop.b<=S.loop.a)msg('Loop end must be after loop start.',1)};
+// beat maker
+S.pat={...GENRES.afrobeats.p};
+function renderGrid(){const g=$('grid');g.innerHTML='';for(const r of ROWS){const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:2px;margin:2px 0';const l=document.createElement('span');l.textContent=r;l.style.cssText='width:44px;font-size:12px;color:#8c8c99';row.append(l);const p=S.pat[r]||'................';
+ for(let i=0;i<16;i++){const b=document.createElement('button');b.style.cssText=`flex:1;min-height:30px;padding:0;margin:0;border-radius:6px;${i%4===0?'border-color:#666;':''}background:${p[i]==='x'?'#e8b84a':'#24242d'}`;b.onclick=()=>{const a=(S.pat[r]||'................').split('');a[i]=a[i]==='x'?'.':'x';S.pat[r]=a.join('');renderGrid()};row.append(b)}g.append(row)}}
+$('genre').onchange=()=>{const g=GENRES[$('genre').value];S.pat={...g.p};$('bpm').value=g.bpm;localStorage.bms_bpm=g.bpm;$('swing').value=g.swing;renderGrid()};
+$('mkbeat').onclick=async()=>{try{if(S.beat&&!confirm('Replace the current beat with the new one? Your recordings are kept.'))return;msg('Making the beat…');await wait();
+ const g=GENRES[$('genre').value],full=$('bars').value==='song',r=renderBeat({pattern:S.pat,bpm:+$('bpm').value||g.bpm,swing:+$('swing').value,key:+$('bkey').value,scale:$('bscale').value,bars:full?4:+$('bars').value,song:full,sr:44100});
+ const data=wavEncode([r.L,r.R],r.sr),b=new AudioBuffer({length:r.L.length,sampleRate:r.sr,numberOfChannels:2});b.copyToChannel(r.L,0);b.copyToChannel(r.R,1);
+ S.beat={name:'Beat: '+$('genre').selectedOptions[0].text,data,audio:b};S.peaks=peaksOf(b);await kv('put','beat',{kind:'beat',name:S.beat.name,data});$('beatname').textContent=`${S.beat.name} · ${fmtTime(r.dur)}`;draw();
+ offer(data,'black-mzungu-beat.wav');msg(`Beat ready (${fmtTime(r.dur)}) and loaded. Press play to hear it, or tap the green link to save it.`)}catch(e){msg('Could not make the beat: '+(e.message||e),1)}};
+renderGrid();
+// mp3 + packing
+function mp3Enc(chs,sr,kbps){const e=new lamejs.Mp3Encoder(chs.length,sr,kbps),parts=[],cv=a=>{const o=new Int16Array(a.length);for(let i=0;i<a.length;i++)o[i]=Math.max(-32768,Math.min(32767,Math.round(a[i]*32767)));return o},L=cv(chs[0]),R=chs[1]?cv(chs[1]):null;
+ for(let i=0;i<L.length;i+=1152){const b=R?e.encodeBuffer(L.subarray(i,i+1152),R.subarray(i,i+1152)):e.encodeBuffer(L.subarray(i,i+1152));if(b.length)parts.push(b)}const f=e.flush();if(f.length)parts.push(f);
+ const n=parts.reduce((a,p)=>a+p.length,0),out=new Uint8Array(n);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out.buffer}
+function pack(chs,sr,base){const f=$('fmt').value;
+ if(f==='wav'){const ab=wavEncode(chs,sr),v=validateWav(ab);return v.ok&&v.frames===chs[0].length&&v.sr===sr&&v.ch===chs.length?{ab,name:base+'.wav',mime:'audio/wav',info:'16-bit WAV'}:null}
+ if(!window.lamejs)return null;const kb=+f,ab=mp3Enc(chs,sr,kb),u=new Uint8Array(ab),expect=kb*125*(chs[0].length/sr);
+ return u[0]===0xFF&&(u[1]&0xE0)===0xE0&&ab.byteLength>expect*0.85&&ab.byteLength<expect*1.15+4000?{ab,name:base+'.mp3',mime:'audio/mpeg',info:kb+' kbps MP3'}:null}
+// backup / restore
+$('bk').onclick=()=>{try{if(!S.beat&&!S.takes.length)return msg('Nothing to back up yet.',1);const blobs=[],meta={app:'BMS',v:1,beat:S.beat?{name:S.beat.name}:null,takes:S.takes.map(t=>({id:t.id,name:t.name,sr:t.sr})),clips:S.clips,fx:S.fx,bpm:$('bpm').value,lat:$('lat').value,bg:$('bg').value,vg:$('vg').value,dip:S.dip};
+ if(S.beat)blobs.push(S.beat.data);for(const t of S.takes)blobs.push(t.data.buffer.slice(t.data.byteOffset,t.data.byteOffset+t.data.byteLength));
+ const ab=packProject(meta,blobs);offer(ab,'black-mzungu-backup-'+new Date().toISOString().slice(0,10)+'.bms','application/octet-stream');msg(`Backup ready (${(ab.byteLength/1048576).toFixed(1)} MB). Tap the green link and save it to Files. Keep a copy somewhere safe.`)}catch(e){msg('Backup failed: '+(e.message||e),1)}};
+$('rs').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const p=unpackProject(await f.arrayBuffer());if(!p||p.meta.app!=='BMS')return msg('That is not a BLACK MZUNGU STUDIO backup file.',1);
+ if(!confirm('Restore this backup? It REPLACES your current beat, recordings and edits on this device.'))return;
+ for(const t of S.takes)await kv('del','take:'+t.id);let bi=0;S.beat=null;S.peaks=null;
+ if(p.meta.beat){const data=p.blobs[bi++];S.beat={name:p.meta.beat.name,data,audio:await dec(data)};S.peaks=peaksOf(S.beat.audio);await kv('put','beat',{kind:'beat',name:S.beat.name,data})}else await kv('del','beat');
+ S.takes=[];for(const m of p.meta.takes){const t={kind:'take',id:m.id,name:m.name,sr:m.sr,data:new Float32Array(p.blobs[bi++])};S.takes.push(t);await kv('put','take:'+t.id,t)}
+ S.clips=p.meta.clips||[];await saveClips();Object.assign(S.fx,p.meta.fx||{});saveFx();for(const [id,v] of [['bpm',p.meta.bpm],['lat',p.meta.lat],['bg',p.meta.bg],['vg',p.meta.vg]])if(v!=null){$(id).value=v;localStorage['bms_'+id]=v}
+ S.dip=p.meta.dip||0;localStorage.bms_dip=S.dip;for(const [id,u] of [['lat','latv'],['bg','bgv'],['vg','vgv']])$(u).textContent=$(id).value;S.selClip=S.clips[0]?S.clips[0].id:null;
+ $('beatname').textContent=S.beat?S.beat.name+' · '+fmtTime(S.beat.audio.duration):'No beat loaded';renderFx();renderAll();msg('Backup restored.')}catch(err){msg('Restore failed: '+(err.message||err),1)}};
 // ---- export ----
-function offer(buf,name){const url=URL.createObjectURL(new Blob([buf],{type:'audio/wav'}));$('dl').innerHTML=`<a href="${url}" download="${name}">⬇ Tap to save ${name}</a>`}
+function offer(buf,name,mime='audio/wav'){const url=URL.createObjectURL(new Blob([buf],{type:mime}));$('dl').innerHTML=`<a href="${url}" download="${name}">⬇ Tap to save ${name}</a>`}
 async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!c.mute))return msg('Nothing to export yet.',1);msg('Rendering…');
  const sr=44100,dur=Math.max(o.beat&&S.beat?S.beat.audio.duration:0,...S.clips.filter(c=>!c.mute).map(clipEnd)),oc=new OfflineAudioContext(2,Math.ceil(dur*sr),sr);
  schedule(oc,oc.destination,0,o,0);const r=await oc.startRendering();
  const ch=[r.getChannelData(0),r.getChannelData(1)],a=analyse(ch[0]),b=analyse(ch[1]),pk=Math.max(a.peak,b.peak);
  if(a.silent&&b.silent)return msg('Export failed: the rendered audio is silent. Nothing was saved.',1);
  let note='';if(pk>0.891){const g=0.891/pk;ch.forEach(c=>{for(let i=0;i<c.length;i++)c[i]*=g});note=` It peaked at ${(20*Math.log10(pk)).toFixed(1)} dB, so it was lowered to −1 dBFS to avoid clipping.`}
- const ab=wavEncode(ch,sr),v=validateWav(ab);if(!v.ok||v.frames!==r.length||v.ch!==2||v.sr!==sr)return msg('Export validation failed. File not offered.',1);
- offer(ab,name);msg(`${label} ready & verified: ${fmtTime(dur)}, ${sr} Hz, stereo, 16-bit. Starts at timeline 0:00.${note}`)}catch(e){msg('Export failed: '+(e.message||e),1)}}
-$('expmix').onclick=()=>render({beat:1,vocal:1},'black-mzungu-mix.wav','Mix');
-$('expvox').onclick=()=>render({beat:0,vocal:1,fx:false},'black-mzungu-vocal-stem-dry.wav','Dry vocal stem');
-$('expfx').onclick=()=>render({beat:0,vocal:1,fx:true},'black-mzungu-vocal-stem-processed.wav','Processed vocal stem');
+ const pk2=pack(ch,sr,name);if(!pk2)return msg('Export validation failed. File not offered.',1);
+ offer(pk2.ab,pk2.name,pk2.mime);msg(`${label} ready & verified: ${fmtTime(dur)}, ${sr} Hz, stereo, ${pk2.info}. Starts at timeline 0:00.${note}`)}catch(e){msg('Export failed: '+(e.message||e),1)}}
+$('expmix').onclick=()=>render({beat:1,vocal:1},'black-mzungu-mix','Mix');
+$('expvox').onclick=()=>render({beat:0,vocal:1,fx:false},'black-mzungu-vocal-stem-dry','Dry vocal stem');
+$('expfx').onclick=()=>render({beat:0,vocal:1,fx:true},'black-mzungu-vocal-stem-processed','Processed vocal stem');
 // ---- restore ----
 try{const all=await kv('all');let list=null;
  for(const v of all||[]){if(v.kind==='beat'){S.beat={name:v.name,data:v.data,audio:await dec(v.data)};S.peaks=peaksOf(S.beat.audio);$('beatname').textContent=`${v.name} · ${fmtTime(S.beat.audio.duration)}`}else if(v.kind==='take')S.takes.push(v);else if(v.kind==='clips')list=v.list}
