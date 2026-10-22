@@ -103,6 +103,9 @@ export function decide(a, style = 'natural') {
   p.ratio = a.dynRangeDb > 20 ? 4 : a.dynRangeDb > 14 ? 3 : 2; p.thr = cl(Math.round(a.rmsDb + 1), -40, -12);
   const gr = Math.max(0, a.p95Db - p.thr) * (1 - 1 / p.ratio); p.mk = +cl(gr * 0.5, 0, 8).toFixed(1);
   notes.push(['measured', `Dynamic range is ${a.dynRangeDb.toFixed(0)} dB, so compression ${p.ratio}:1 from ${p.thr} dB, makeup +${p.mk} dB.`]);
+  if (a.snrDb >= 12) { p.gate = cl(Math.round(a.noiseFloorDb + 8), -75, -35); p.gdepth = 15; p.gateOn = 1;
+    notes.push(['measured', `Background between phrases is about ${a.noiseFloorDb.toFixed(0)} dB, so a noise gate is set at ${p.gate} dB, turning that down 15 dB when you are not singing. It cannot remove noise while you sing.`]); }
+  else { p.gateOn = 0; notes.push(['measured', 'No clearly quiet gaps were found, so the noise gate stays off (it could cut words).']); }
   p.rev = st.rev; p.dly = st.dly;
   notes.push(['choice', `Reverb ${Math.round(p.rev * 100)}% and delay ${Math.round(p.dly * 100)}% come from the “${style}” style. This is a taste choice, not a measurement.`]);
   if (a.snrDb < 20) notes.push(['warn', `Background noise is high (about ${a.snrDb.toFixed(0)} dB above the noise floor). There is no noise reduction yet; re-record somewhere quieter if you can.`]);
@@ -183,4 +186,72 @@ export function mixAdvice(m, style = 'natural') { // each item: [kind, text, opt
   if (m.tpDb > -1) o.push(['warn', `True peak is ${m.tpDb.toFixed(1)} dBTP, close to or over the safe −1 dBTP. Mastering will bring it under.`]);
   o.push(['measured', `Mix loudness ${m.mixLufs.toFixed(1)} LUFS integrated, ${m.shortMax.toFixed(1)} LUFS highest short-term.`]);
   return o;
+}
+// ---- Noise gate (non-destructive: applied to a copy at playback/export) ----
+export function gateAudio(x, sr, thrDb, depthDb) {
+  const n = x.length, y = new Float32Array(n), g = new Float32Array(n), thr = Math.pow(10, thrDb / 10), floor = Math.pow(10, -depthDb / 20);
+  const ea = 1 - Math.exp(-1 / (0.001 * sr)), er = 1 - Math.exp(-1 / (0.05 * sr)), ga = 1 - Math.exp(-1 / (0.003 * sr)), gr = 1 - Math.exp(-1 / (0.1 * sr)), look = Math.round(0.006 * sr);
+  let e = 0, gg = floor;
+  for (let i = 0; i < n; i++) { const p = x[i] * x[i]; e += (p - e) * (p > e ? ea : er); const t = e > thr ? 1 : floor; gg += (t - gg) * (t > gg ? ga : gr); g[i] = gg; }
+  for (let i = 0; i < n; i++) y[i] = x[i] * g[Math.min(n - 1, i + look)];
+  return y;
+}
+// ---- Pitch detection and correction (experimental) ----
+export const SCALES = { major: [0, 2, 4, 5, 7, 9, 11], minor: [0, 2, 3, 5, 7, 8, 10], chromatic: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] };
+export function snapMidi(m, key, scale) {
+  const deg = SCALES[scale] || SCALES.major; let best = m, bd = 1e9; const base = Math.round(m);
+  for (let n = base - 7; n <= base + 7; n++) { const pc = (((n - key) % 12) + 12) % 12; if (deg.includes(pc)) { const d = Math.abs(n - m); if (d < bd) { bd = d; best = n; } } }
+  return best;
+}
+export function detectPitch(x, sr, hop = 512) { // YIN on a 4x decimated copy. f0[i] = 0 when unvoiced. Frame i is centred at i*hop + 0.02*sr
+  const D = 4, ns = Math.floor(x.length / D), xs = new Float32Array(ns); for (let i = 0; i < ns; i++) xs[i] = (x[D * i] + x[D * i + 1] + x[D * i + 2] + x[D * i + 3]) / 4;
+  const fs = sr / D, W = Math.round(0.04 * fs), tmin = Math.max(2, Math.floor(fs / 800)), tmax = Math.floor(fs / 70), nF = Math.max(0, Math.floor((x.length - 0.04 * sr) / hop)), f0 = new Float32Array(nF), d = new Float64Array(tmax + 2), c = new Float64Array(tmax + 2);
+  for (let f = 0; f < nF; f++) { const p = Math.round(f * hop / D); if (p + W + tmax + 1 >= ns) break; let e = 0; for (let j = 0; j < W; j++) e += xs[p + j] * xs[p + j]; if (Math.sqrt(e / W) < 0.004) continue;
+    for (let t = 1; t <= tmax; t++) { let s = 0; for (let j = 0; j < W; j++) { const q = xs[p + j] - xs[p + j + t]; s += q * q; } d[t] = s; }
+    let run = 0; c[0] = 1; for (let t = 1; t <= tmax; t++) { run += d[t]; c[t] = run > 0 ? d[t] * t / run : 1; }
+    let tau = -1; for (let t = tmin; t < tmax; t++) { if (c[t] < 0.15) { while (t + 1 < tmax && c[t + 1] < c[t]) t++; tau = t; break; } }
+    if (tau < 0) continue; const a = c[tau - 1], b = c[tau], g = c[tau + 1], den = a - 2 * b + g, tt = den !== 0 ? tau + 0.5 * (a - g) / den : tau; f0[f] = fs / tt; }
+  return { f0, hop, centre: Math.round(0.02 * sr) };
+}
+export function pitchCorrect(x, sr, o) { // TD-PSOLA on voiced runs; unvoiced audio is left untouched
+  const { key = 0, scale = 'major', strength = 1 } = o, { f0, hop, centre } = detectPitch(x, sr), nF = f0.length, n = x.length, out = Float32Array.from(x), ratio = new Float32Array(nF).fill(1);
+  for (let i = 0; i < nF; i++) if (f0[i] > 0) { const m = 69 + 12 * Math.log2(f0[i] / 440); ratio[i] = Math.pow(2, ((snapMidi(m, key, scale) - m) * strength) / 12); }
+  let prev = 1; for (let i = 0; i < nF; i++) { if (f0[i] > 0) { prev = ratio[i] = prev + (ratio[i] - prev) * 0.6; } else prev = 1; }
+  const idx = t => Math.max(0, Math.min(nF - 1, Math.round((t - centre) / hop))), fade = Math.round(0.005 * sr);
+  let i = 0;
+  while (i < nF) {
+    if (!(f0[i] > 0)) { i++; continue; } let j = i; while (j + 1 < nF && f0[j + 1] > 0) j++;
+    if (j - i + 1 >= 4) { const s = Math.max(0, centre + i * hop - hop / 2 | 0), e = Math.min(n, centre + j * hop + hop / 2 | 0), T0 = t => sr / f0[idx(t)];
+      let m = s, bv = -1; const T = T0(s); for (let k = s; k < Math.min(e, s + T); k++) if (x[k] > bv) { bv = x[k]; m = k; }
+      const marks = [m]; for (;;) { const Tm = T0(m), nx = m + Tm; if (nx + Tm / 4 >= e) break; let mm = Math.round(nx), best = -1e9; for (let k = Math.round(nx - 0.2 * Tm); k <= Math.round(nx + 0.2 * Tm); k++) if (k < n && x[k] > best) { best = x[k]; mm = k; } if (mm <= m) break; marks.push(mm); m = mm; }
+      const len = e - s, acc = new Float32Array(len), ws = new Float32Array(len); let ts = marks[0], k = 0;
+      while (ts < e) { while (k + 1 < marks.length && Math.abs(marks[k + 1] - ts) < Math.abs(marks[k] - ts)) k++; const mk = marks[k], L = Math.round(T0(mk));
+        for (let q = -L; q <= L; q++) { const src = mk + q, dst = Math.round(ts) + q - s; if (src < 0 || src >= n || dst < 0 || dst >= len) continue; const w = 0.5 + 0.5 * Math.cos(Math.PI * q / L); acc[dst] += x[src] * w; ws[dst] += w; }
+        ts += T0(mk) / ratio[idx(mk)]; }
+      for (let q = 0; q < len; q++) { if (ws[q] < 0.3) continue; const wg = Math.min(1, q / fade, (len - 1 - q) / fade); out[s + q] = x[s + q] * (1 - wg) + (acc[q] / ws[q]) * wg; } }
+    i = j + 1;
+  }
+  return out;
+}
+// ---- Presets (starting points, not promises) ----
+export const PRESETS = {
+  'Bongo Flava': { hpf: 90, mud: 1.5, pres: 2, air: 2, sib: 2, thr: -24, ratio: 3, mk: 3, rev: 0.14, dly: 0.10 },
+  'Afrobeats': { hpf: 90, mud: 1, pres: 1.5, air: 2, sib: 2, thr: -22, ratio: 3, mk: 3, rev: 0.12, dly: 0.12 },
+  'Amapiano': { hpf: 100, mud: 2, pres: 1, air: 2.5, sib: 2, thr: -24, ratio: 3, mk: 3, rev: 0.16, dly: 0.10 },
+  'Melodic rap': { hpf: 95, mud: 2, pres: 1.5, air: 1.5, sib: 3, thr: -26, ratio: 4, mk: 4, rev: 0.12, dly: 0.14 },
+  'Dry rap': { hpf: 100, mud: 2.5, pres: 2, air: 0.5, sib: 3, thr: -28, ratio: 4, mk: 5, rev: 0.02, dly: 0 },
+  'R&B': { hpf: 85, mud: 1, pres: 1, air: 3, sib: 2.5, thr: -24, ratio: 3, mk: 3, rev: 0.18, dly: 0.08 },
+  'Gospel': { hpf: 80, mud: 0.5, pres: 1, air: 2, sib: 1.5, thr: -22, ratio: 2.5, mk: 2, rev: 0.22, dly: 0.06 },
+  'Clean pop': { hpf: 90, mud: 1.5, pres: 1.5, air: 2.5, sib: 3, thr: -25, ratio: 3.5, mk: 4, rev: 0.14, dly: 0.08 },
+  'Aggressive': { hpf: 110, mud: 2.5, pres: 3, air: 1, sib: 2, thr: -30, ratio: 6, mk: 6, rev: 0.04, dly: 0.04 },
+  'Natural': { hpf: 80, mud: 0, pres: 0, air: 1, sib: 0, thr: -20, ratio: 2, mk: 1, rev: 0.05, dly: 0 },
+};
+// ---- Project backup container: 'BMS1' + json length + json + binary blobs ----
+export function packProject(meta, blobs) {
+  const json = new TextEncoder().encode(JSON.stringify({ ...meta, sizes: blobs.map(b => b.byteLength) })), out = new Uint8Array(8 + json.length + blobs.reduce((a, b) => a + b.byteLength, 0)), dv = new DataView(out.buffer);
+  out.set([66, 77, 83, 49]); dv.setUint32(4, json.length, true); out.set(json, 8); let o = 8 + json.length; for (const b of blobs) { out.set(new Uint8Array(b), o); o += b.byteLength; } return out.buffer;
+}
+export function unpackProject(ab) {
+  if (ab.byteLength < 8) return null; const dv = new DataView(ab); if (dv.getUint32(0, false) !== 0x424d5331) return null;
+  try { const jl = dv.getUint32(4, true), meta = JSON.parse(new TextDecoder().decode(new Uint8Array(ab, 8, jl))); let o = 8 + jl; const blobs = meta.sizes.map(s => { const b = ab.slice(o, o + s); o += s; return b; }); return o === ab.byteLength ? { meta, blobs } : null; } catch { return null; }
 }

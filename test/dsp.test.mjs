@@ -117,3 +117,45 @@ test('mix advice flags masking and suggests vocal gain', () => {
   const a = mixAdvice(base, 'natural'), has = f => a.some(i => i[2] && f(i[2]));
   assert.ok(has(x => x.vg > 0) && has(x => x.dip > 0) && a.some(i => i[0] === 'warn'));
 });
+import { gateAudio } from '../dsp.js';
+test('gate lowers background between phrases but keeps the singing and its onset', () => {
+  const noise = n => Float32Array.from({ length: n }, (_, i) => 0.001 * (Math.sin(2 * Math.PI * 3000 * i / sr) + Math.sin(2 * Math.PI * 5000 * i / sr)));
+  const a = noise(sr), b = tone(300, 0.3, 0.5), c = noise(sr), x = new Float32Array(a.length + b.length + c.length); x.set(a); x.set(b, a.length); x.set(c, a.length + b.length);
+  const y = gateAudio(x, sr, -48, 15), rms = (v, s, e) => Math.sqrt(v.subarray(s, e).reduce((t, q) => t + q * q, 0) / (e - s));
+  const quiet = 20 * Math.log10(rms(y, 5000, sr - 5000) / rms(x, 5000, sr - 5000));
+  assert.ok(quiet < -12, 'noise change ' + quiet);
+  const mid = 20 * Math.log10(rms(y, sr + 5000, sr + 20000) / rms(x, sr + 5000, sr + 20000));
+  assert.ok(Math.abs(mid) < 0.5, 'mid ' + mid);
+  const on = Math.max(...y.subarray(sr, sr + 130).map(Math.abs)) / Math.max(...x.subarray(sr, sr + 130).map(Math.abs));
+  assert.ok(on > 0.6, 'onset ' + on);
+});
+import { detectPitch, pitchCorrect, snapMidi, packProject, unpackProject, PRESETS } from '../dsp.js';
+import { renderBeat, GENRES } from '../beat.js';
+const medCents = (x, hz) => { const { f0 } = detectPitch(x, sr), v = [...f0].filter(f => f > 0).sort((a, b) => a - b); return v.length ? 1200 * Math.log2(v[Math.floor(v.length / 2)] / hz) : NaN; };
+const rmsOf = v => Math.sqrt(v.reduce((t, q) => t + q * q, 0) / v.length);
+test('pitch detector finds 220 Hz within 1%', () => assert.ok(Math.abs(medCents(mix([220, 440, 660], 0.1, sr * 1), 220)) < 17));
+test('snap to scale: A is in C major, A# snaps to a neighbour', () => { assert.equal(snapMidi(69.2, 0, 'major'), 69); assert.ok([69, 71].includes(snapMidi(70, 0, 'major'))); });
+test('pitch correction moves a flat note onto the scale note', () => {
+  const x = tone(430, 0.3, 2), y = pitchCorrect(x, sr, { key: 0, scale: 'major', strength: 1 }), mid = a => a.subarray(sr * 0.4, sr * 1.6);
+  const before = medCents(mid(x), 440), after = medCents(mid(y), 440);
+  assert.ok(Math.abs(after) < 12 && Math.abs(after) < Math.abs(before) - 10, `before ${before.toFixed(1)} after ${after.toFixed(1)}`);
+  const lv = 20 * Math.log10(rmsOf(mid(y)) / rmsOf(mid(x))); assert.ok(Math.abs(lv) < 3, 'level ' + lv);
+});
+test('pitch correction leaves an in-tune note and quiet gaps alone', () => {
+  const x = tone(440, 0.3, 2), y = pitchCorrect(x, sr, { key: 0, scale: 'major', strength: 1 }); assert.ok(Math.abs(medCents(y.subarray(sr * 0.4, sr * 1.6), 440)) < 8);
+  const q = new Float32Array(sr), z = pitchCorrect(q, sr, { key: 0, scale: 'major', strength: 1 }); assert.deepEqual(z, q);
+});
+test('project backup round-trips exactly and rejects junk', () => {
+  const a = new Float32Array([1, 2, 3]).buffer, b = new Uint8Array([9, 8, 7, 6, 5]).buffer, p = unpackProject(packProject({ name: 'x', n: 2 }, [a, b]));
+  assert.equal(p.meta.name, 'x'); assert.deepEqual([...new Float32Array(p.blobs[0])], [1, 2, 3]); assert.deepEqual([...new Uint8Array(p.blobs[1])], [9, 8, 7, 6, 5]);
+  assert.equal(unpackProject(new ArrayBuffer(20)), null);
+});
+test('all 10 presets exist and stay in range', () => { assert.equal(Object.keys(PRESETS).length, 10); for (const p of Object.values(PRESETS)) assert.ok(p.hpf >= 40 && p.hpf <= 200 && p.ratio >= 1 && p.rev >= 0 && p.rev <= 0.5); });
+test('beat maker: exact length, sound lands on the beat, not clipped, repeatable', () => {
+  const g = GENRES.afrobeats, a = renderBeat({ pattern: g.p, bpm: 100, bars: 2, sr }), b = renderBeat({ pattern: g.p, bpm: 100, bars: 2, sr });
+  assert.equal(a.L.length, Math.round(2 * 16 * (60 / 100 / 4) * sr));
+  assert.ok(rmsOf(a.L.subarray(0, sr * 0.05)) > 0.05, 'kick at 0');
+  { let pk = 0; for (const v of a.L) pk = Math.max(pk, Math.abs(v)); assert.ok(pk <= 0.9); }
+  assert.deepEqual(a.L, b.L);
+  const s = renderBeat({ pattern: g.p, bpm: 100, song: true, sr }); assert.ok(Math.abs(s.dur - 20 * 16 * 0.15) < 0.01, 'song ' + s.dur);
+});
