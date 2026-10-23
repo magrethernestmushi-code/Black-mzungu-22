@@ -1,96 +1,127 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b0b0e"><title>BLACK MZUNGU STUDIO</title>
+<meta name="theme-color" content="#0b0b0f"><title>BLACK MZUNGU STUDIO</title>
 <style>
-:root{--bg:#0b0b0e;--card:#16161c;--line:#2a2a33;--tx:#ececf1;--mut:#8c8c99;--acc:#e8b84a;--rec:#e5484d;--ok:#46c37b}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 -apple-system,system-ui,sans-serif;padding:max(12px,env(safe-area-inset-top)) 14px max(24px,env(safe-area-inset-bottom))}
-h1{font-size:18px;letter-spacing:.14em;margin:6px 0 2px;color:var(--acc)}small,.mut{color:var(--mut)}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-h2{font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
-button,.btn{background:#24242d;color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:14px;font-size:16px;min-height:48px;width:100%;margin:4px 0;text-align:center;display:block}
-button.rec{background:var(--rec);border-color:var(--rec);font-weight:700;min-height:64px;font-size:18px}
-button.rec.on{background:#fff;color:var(--rec)}button.p{background:var(--acc);color:#111;font-weight:700;border-color:var(--acc)}
-.row{display:flex;gap:8px}.row>*{flex:1}input[type=range]{width:100%;height:32px}
-canvas{width:100%;height:90px;background:#0e0e12;border-radius:10px;display:block}
-.take{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px;margin:6px 0}
-.take.sel{border-color:var(--acc)}.take .i{flex:1;min-width:0}.take button{width:auto;min-height:40px;padding:8px 12px;margin:0}
-#status{position:sticky;bottom:0;background:#101015;border:1px solid var(--line);border-radius:12px;padding:10px;margin-top:12px}
-#status.err{border-color:var(--rec);color:#ffb4b6}#dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
+:root{--bg:#0b0b0f;--p1:#15151c;--p2:#1e1e29;--line:#2b2b38;--tx:#f1f1f6;--mut:#8b8b9c;--acc:#e8b84a;--rec:#ff3b4e;--ok:#37d67a}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,sans-serif;padding-bottom:calc(132px + env(safe-area-inset-bottom))}
+#errbar{display:none;position:sticky;top:0;z-index:50;background:#7a1620;color:#fff;padding:10px 14px;font-size:14px}
+.top{position:sticky;top:0;z-index:30;background:linear-gradient(#17171f,#0e0e13);border-bottom:1px solid var(--line);padding:max(8px,env(safe-area-inset-top)) 12px 10px}
+.brand{font-weight:800;letter-spacing:.2em;font-size:11px;color:var(--acc)}
+.clockrow{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
+.time{font:700 34px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.chip{background:var(--p2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--mut)}
+.tr{display:flex;gap:12px;justify-content:center}
+.rb{width:56px;height:56px;min-height:0;border-radius:50%;border:1px solid var(--line);background:var(--p2);color:var(--tx);font-size:21px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
+.rb.pl{background:var(--ok);border-color:var(--ok);color:#06210f}.rb.rec{background:var(--rec);border-color:var(--rec);color:#fff}.rb.rec.on{background:#fff;color:var(--rec);animation:pulse 1s infinite}.rb.on{box-shadow:0 0 0 3px #e8b84a88}
+@keyframes pulse{50%{box-shadow:0 0 0 8px #ff3b4e44}}
+main{padding:10px 12px}.tab{display:none}
+.card{background:var(--p1);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px}
+h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
+small,.mut{color:var(--mut)}
+button,.btn{background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;min-height:48px;width:100%;margin:4px 0;text-align:center;display:block}
+button.p{background:var(--acc);color:#111;font-weight:700;border-color:var(--acc)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+input[type=range]{width:100%;height:32px;accent-color:var(--acc)}input[type=number],select{background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:10px}
+select{width:100%;padding:12px;font-size:16px}
+canvas{width:100%;display:block;border-radius:12px;background:#0c0c11}
+#wave{height:auto;aspect-ratio:900/340}#meter{aspect-ratio:700/150}
+.pills{display:flex;gap:8px;flex-wrap:wrap}.pill{width:auto;flex:1;min-width:70px;border-radius:24px;padding:10px 6px;min-height:44px;font-size:14px;margin:0}.pill.act{color:#111;font-weight:700}
+.take{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0;background:var(--p2)}.take.sel{border-color:var(--acc)}.take .i{flex:1;min-width:0}.take button{width:auto;min-height:40px;padding:8px 12px;margin:0}
+#status{position:fixed;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:40;background:#101016ee;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;max-height:90px;overflow:auto;backdrop-filter:blur(8px)}
+#status.err{border-color:var(--rec);color:#ffb4b6}
+#dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
+nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;background:#0e0e13f2;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(10px)}
+nav button{flex:1;border:0;border-radius:0;background:transparent;min-height:58px;padding:6px 0;margin:0;font-size:11px;color:var(--mut);width:auto}nav button b{display:block;font-size:20px;font-weight:400}nav button.act{color:var(--acc)}
+summary{padding:6px 0;color:var(--acc)}label{display:block}
 </style></head><body>
-<h1>BLACK MZUNGU STUDIO</h1><small>Stage E · presets, pitch, beat maker, backup, MP3 · private, everything stays on this device</small>
+<div id="errbar"></div>
+<header class="top">
+ <div class="brand">BLACK MZUNGU STUDIO</div>
+ <div class="clockrow"><div id="clock" class="time">0:00.0</div><div class="chips"><span class="chip" id="bpmchip">90 BPM</span><span class="chip" id="beatchip">No beat</span></div></div>
+ <div class="tr"><button id="rewind" class="rb" aria-label="Back to start">⏮</button><button id="stop" class="rb" aria-label="Stop">■</button><button id="play" class="rb pl" aria-label="Play">▶</button><button id="rec" class="rb rec" aria-label="Record">●</button><button id="loopbtn" class="rb" aria-label="Loop">🔁</button></div>
+</header>
+<main>
+<section class="tab" id="tab-studio">
+ <div class="card" style="padding:8px"><canvas id="wave" width="900" height="340"></canvas><div id="cur" class="mut" style="font-size:12px;margin-top:6px">Tap the timeline to move the playhead. Tap a clip to select it.</div></div>
+ <div class="card"><h2>Record to track</h2><div class="pills" id="pills"></div><select id="rtrack" hidden><option value="0">Lead</option><option value="1">Double</option><option value="2">Harmony</option><option value="3">Ad-lib</option></select>
+  <small>Press ● at the top. Recording starts at the playhead, after the count-in. Use headphones.</small></div>
+ <div class="card"><h2>Clips</h2><div id="clips"><span class="mut">No clips yet</span></div><button id="undo">↶ Undo last edit</button></div>
+ <div class="card"><h2>Recording setup</h2>
+  <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:12px;font-size:16px"></label><label>Count-in<select id="cin"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div>
+  <label><input type="checkbox" id="met" checked> Metronome on</label><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><label><input type="checkbox" id="loopon"> Loop playback (not while recording)</label>
+  <div class="row"><button id="loopa">Loop start = playhead</button><button id="loopb">Loop end = playhead</button></div><div id="looptxt" class="mut">Move the playhead, then set loop start and end.</div>
+  <label style="margin-top:8px">Latency compensation (new recordings): <b id="latv">0</b> ms<br><small>Wired headphones are low; Bluetooth is often 150–250 ms. Adjust until the take sits on the beat.</small><input id="lat" type="range" min="0" max="400" step="1" value="0"></label>
+  <label>Microphone / audio interface<select id="dev"><option value="">Default microphone</option></select></label>
+  <button id="mictest">🎚 Test mic &amp; show meters</button><canvas id="meter" width="700" height="150"></canvas><div id="peak" class="mut">Meters are off. Tap “Test mic”, or start recording.</div></div>
+ <details class="card"><summary>How to start (3 steps)</summary><small>1) Beat tab: import a beat or make one. 2) Pick a track above and press ● to record. 3) Press ▶ to listen. Then open FX and tap “Analyse my vocal”.</small></details>
+</section>
 
-<div class="card"><h2>1 · Beat</h2>
- <label class="btn" for="file">Import beat (WAV / MP3 / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden>
- <div id="beatname" class="mut">No beat loaded</div><canvas id="wave" width="700" height="210"></canvas><div class="mut" id="cur">Playhead 0:00.0 · tap the timeline to move it</div>
-</div>
+<section class="tab" id="tab-mixer">
+ <div class="card"><h2>Levels</h2>
+  <label>Beat level: <b id="bgv">0</b> dB<input id="bg" type="range" min="-24" max="6" step="0.5" value="0"></label>
+  <label>All vocals level: <b id="vgv">0</b> dB<input id="vg" type="range" min="-24" max="12" step="0.5" value="0"></label></div>
+ <div class="card"><h2>Tracks</h2><div id="tracks"></div>
+  <label><input type="checkbox" id="spatial"> Spatial preview (3D for headphones, NOT Dolby Atmos)</label>
+  <small>Pan a track and, with this on, it moves around your head in 3D. Best on headphones; it can sound thin on a phone speaker or in mono. Changes apply next time you press play.</small></div>
+</section>
 
-<div class="card"><h2>1b · Beat maker</h2>
- <small>Makes a beat from simple synthesised sounds using a step pattern. It is rule-based, not generative AI, and uses no samples. Tap squares to edit the pattern.</small>
- <label>Genre<select id="genre" style="width:100%;padding:10px;font-size:16px"><option value="afrobeats">Afrobeats</option><option value="amapiano">Amapiano</option><option value="bongoflava">Bongo Flava</option><option value="melodicrap">Melodic rap</option><option value="rnb">R&amp;B</option></select></label>
- <div class="row"><label>Key<select id="bkey" style="width:100%;padding:10px;font-size:16px"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select></label><label>Scale<select id="bscale" style="width:100%;padding:10px;font-size:16px"><option value="minor">Minor</option><option value="major">Major</option></select></label></div>
- <div class="row"><label>Length<select id="bars" style="width:100%;padding:10px;font-size:16px"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
- <small>Tempo uses the BPM in the Record section.</small><div id="grid"></div>
- <button id="mkbeat" class="p">Make beat &amp; use it</button></div>
-<div class="card"><h2>2 · Record</h2>
- <small>Use headphones. Mic monitoring is off, so no feedback. Echo cancel, noise suppression and auto-gain are switched off for clean audio.</small>
- <label>Microphone / audio interface<select id="dev" style="width:100%;padding:10px;font-size:16px"><option value="">Default microphone</option></select></label>
- <button id="mictest">🎚 Test mic &amp; show meters</button><canvas id="meter" width="700" height="150"></canvas><div id="peak" class="mut">Meters are off. Tap “Test mic”, or start recording.</div>
- <button id="rec" class="rec">● RECORD</button>
- <div class="row"><button id="play">▶ Play from playhead</button><button id="stop">■ Stop</button></div>
- <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:10px;font-size:16px"></label><label>Count-in<select id="cin" style="width:100%;padding:10px;font-size:16px"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div><label><input type="checkbox" id="met" checked> Metronome on</label><br><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><br>
- <label><input type="checkbox" id="loopon"> Loop playback (not used while recording)</label>
- <div class="row"><button id="loopa">Loop start = playhead</button><button id="loopb">Loop end = playhead</button></div><div id="looptxt" class="mut">Move the playhead, then set loop start and end.</div><small><br>Recording starts at the playhead, so you can punch in anywhere.</small>
- <label>Latency compensation (new recordings): <b id="latv">0</b> ms<br><small>Bluetooth is usually 150–250 ms. Wired is lower. Adjust by ear until the take sits on the beat.</small>
- <input id="lat" type="range" min="0" max="400" step="1" value="0"></label>
- <label>Beat level: <b id="bgv">0</b> dB<input id="bg" type="range" min="-24" max="6" step="0.5" value="0"></label>
- <label>Vocal level: <b id="vgv">0</b> dB<input id="vg" type="range" min="-24" max="12" step="0.5" value="0"></label>
-</div>
+<section class="tab" id="tab-fx">
+ <div class="card"><h2>Vocal engineer</h2><small>Measures your recorded vocal, then sets the effects from those measurements. Runs on this phone with no internet. It is measurement-based processing, not a neural-network model.</small>
+  <label style="margin-top:8px">Style (reverb and delay taste)<select id="style"><option value="natural">Natural</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="bongo">Bongo Flava / Afro</option></select></label>
+  <button id="auto" class="p">Analyse my vocal &amp; set effects</button><button id="fxon">Vocal processing: ON</button><button id="fxundo">↶ Undo auto-set</button><div id="report"></div></div>
+ <div class="card"><h2>Presets (starting points)</h2><select id="preset"></select><div class="row"><button id="presapply">Apply</button><button id="pressave">Save mine</button><button id="presdel">Delete mine</button></div></div>
+ <div class="card"><h2>Pitch correction (experimental)</h2><label><input type="checkbox" id="pcon"> On (best on clean solo vocals)</label>
+  <div class="row"><select id="pckey"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select><select id="pcscale"><option value="major">Major</option><option value="minor">Minor</option><option value="chromatic">Chromatic</option></select></div>
+  <label>Strength <b id="pcv">100</b>%<input id="pcstr" type="range" min="0" max="100" value="100"></label></div>
+ <details class="card"><summary>Adjust each effect</summary><div id="fxui"></div><small>Changes apply the next time you press play.</small></details>
+</section>
 
-<div class="card"><h2>3 · Clips on timeline</h2><div id="clips"><span class="mut">No clips yet</span></div><button id="undo">↶ Undo last edit</button></div>
-<div class="card"><h2>Original recordings</h2><small>Raw takes are never changed. Add one back to the timeline anytime.</small><div id="takes"><span class="mut">None yet</span></div></div>
+<section class="tab" id="tab-beat">
+ <div class="card"><h2>Beat</h2><label class="btn" for="file">Import beat (MP3 / WAV / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden><div id="beatname" class="mut">No beat loaded</div></div>
+ <div class="card"><h2>Beat maker</h2><small>Makes a beat from simple synthesised sounds using a step pattern. Rule-based, not generative AI, no samples. Tap squares to edit.</small>
+  <label style="margin-top:8px">Genre<select id="genre"><option value="afrobeats">Afrobeats</option><option value="amapiano">Amapiano</option><option value="bongoflava">Bongo Flava</option><option value="melodicrap">Melodic rap</option><option value="rnb">R&amp;B</option></select></label>
+  <div class="row"><label>Key<select id="bkey"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select></label><label>Scale<select id="bscale"><option value="minor">Minor</option><option value="major">Major</option></select></label></div>
+  <div class="row"><label>Length<select id="bars"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
+  <small>Tempo uses the BPM in Studio → Recording setup.</small><div id="grid"></div><button id="mkbeat" class="p">Make beat &amp; use it</button></div>
+</section>
 
-<div class="card"><h2>4 · Vocal engineer (auto)</h2>
- <small>Measures your recorded vocal, then sets the effects from those measurements. It runs on this phone with no internet. It is measurement-based processing, not a neural-network model.</small>
- <label>Style (reverb and delay taste)<select id="style" style="width:100%;padding:10px;font-size:16px"><option value="natural">Natural</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="bongo">Bongo Flava / Afro</option></select></label>
- <label>Presets (starting points)<select id="preset" style="width:100%;padding:10px;font-size:16px"></select></label>
- <div class="row"><button id="presapply">Apply</button><button id="pressave">Save mine</button><button id="presdel">Delete mine</button></div>
- <label><input type="checkbox" id="pcon"> Pitch correction (experimental, best on clean solo vocals)</label>
- <div class="row"><select id="pckey" style="padding:10px;font-size:16px"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select><select id="pcscale" style="padding:10px;font-size:16px"><option value="major">Major</option><option value="minor">Minor</option><option value="chromatic">Chromatic</option></select></div>
- <label>Strength <b id="pcv">100</b>%<input id="pcstr" type="range" min="0" max="100" value="100"></label>
- <button id="auto" class="p">Analyse my vocal &amp; set effects</button>
- <button id="fxon">Vocal processing: ON (tap to compare dry)</button>
- <button id="fxundo">↶ Undo auto-set</button>
- <div id="report"></div>
- <details><summary>Adjust each effect</summary><div id="fxui"></div></details>
- <small>Changes apply the next time you press play. A/B levels are not loudness-matched yet (Stage D).</small></div>
-<div class="card"><h2>5 · Mix Assistant &amp; Master</h2>
- <small>Measures your beat, vocal and mix, and tells you what is measured and what is only a taste suggestion. Nothing changes until you tap Apply.</small>
- <button id="mixchk" class="p">Check my mix</button><div id="mixrep"></div>
- <button id="mixundo">↶ Undo applied suggestions</button>
- <label>Master target<select id="target" style="width:100%;padding:10px;font-size:16px"><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
- <button id="expmast" class="p">Master &amp; export (WAV)</button>
- <small>Mastering = loudness target + lookahead limiter, with a −1 dBTP true-peak ceiling. It will not squash the mix harder than about 5 dB of limiting, so it may land a little under the target instead. It runs on this phone, so keep this screen open.</small></div>
-<div class="card"><h2>6 · Export</h2>
- <label>File type<select id="fmt" style="width:100%;padding:10px;font-size:16px"><option value="wav">WAV (best quality)</option><option value="192">MP3 192 kbps</option><option value="320">MP3 320 kbps</option></select></label>
- <button id="expmix" class="p">Export full mix (WAV)</button>
- <button id="expvox">Export vocal stem, dry (WAV)</button><button id="expfx">Export vocal stem, processed (WAV)</button><div id="dl"></div>
- <button id="bk">Download project backup (.bms)</button>
- <label class="btn" for="rs">Restore from backup (.bms)</label><input id="rs" type="file" accept=".bms,application/octet-stream" hidden>
-</div>
+<section class="tab" id="tab-master">
+ <div class="card"><h2>Mix Assistant</h2><small>Measures your beat, vocal and mix, and labels what is measured versus a taste suggestion. Nothing changes until you tap Apply.</small>
+  <button id="mixchk" class="p">Check my mix</button><div id="mixrep"></div><button id="mixundo">↶ Undo applied suggestions</button></div>
+ <div class="card"><h2>Master</h2><label>Target<select id="target"><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
+  <button id="expmast" class="p">Master &amp; export</button><small>Loudness target + lookahead limiter with a −1 dBTP ceiling. It will not squash harder than about 5 dB of limiting, so it may land a little under the target. Keep this screen open while it works.</small></div>
+</section>
+
+<section class="tab" id="tab-project">
+ <div class="card"><h2>Export</h2><label>File type<select id="fmt"><option value="wav">WAV (best quality)</option><option value="192">MP3 192 kbps</option><option value="320">MP3 320 kbps</option></select></label>
+  <button id="expmix" class="p">Export full mix</button><button id="expvox">Export vocal stem, dry</button><button id="expfx">Export vocal stem, processed</button><button id="exptr">Export each track separately (dry)</button><div id="dl"></div></div>
+ <div class="card"><h2>Backup</h2><small>Browser data can be erased by the phone. Download a backup now and then.</small><button id="bk">Download project backup (.bms)</button><label class="btn" for="rs">Restore from backup (.bms)</label><input id="rs" type="file" accept=".bms,application/octet-stream" hidden></div>
+ <div class="card"><h2>Original recordings</h2><small>Raw takes are never changed. Add one back to the timeline anytime.</small><div id="takes"><span class="mut">None yet</span></div></div>
+</section>
+</main>
 <div id="status">Ready.</div>
-
+<nav><button id="nav-studio"><b>🎚</b>Studio</button><button id="nav-mixer"><b>🎛</b>Mixer</button><button id="nav-fx"><b>✨</b>Vocal FX</button><button id="nav-beat"><b>🥁</b>Beat</button><button id="nav-master"><b>🔊</b>Master</button><button id="nav-project"><b>📁</b>Project</button></nav>
+<script>
+(function(){var b=document.getElementById('errbar');function s(m){b.style.display='block';b.textContent='⚠ '+m}
+addEventListener('error',function(e){s(e.message||'Error')});addEventListener('unhandledrejection',function(e){s((e.reason&&e.reason.message)||String(e.reason))});
+setTimeout(function(){if(!window.__bmsReady)s('The studio did not start. Pull down to refresh the page. If this stays, tell Claude the exact message.')},5000)})();
+</script>
 <script src="lame.min.js"></script>
 <script type="module">
 import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio,pitchCorrect,PRESETS,packProject,unpackProject} from './dsp.js';
 import {renderBeat,GENRES,ROWS} from './beat.js';
 const $=id=>document.getElementById(id);
 const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
+const TN=['Lead','Double','Harmony','Ad-lib'],TC=['#46c37b','#4aa3ff','#c77dff','#ff9f4a'];
+const TRD=[{vol:0,pan:0},{vol:-6,pan:-0.35},{vol:-5,pan:0.35},{vol:-3,pan:0.6}].map(t=>({...t,mute:0,solo:0}));
+try{S.tracks=JSON.parse(localStorage.bms_tracks||'null');if(!Array.isArray(S.tracks)||S.tracks.length!==4)throw 0}catch{S.tracks=JSON.parse(JSON.stringify(TRD))}
+S.sp=localStorage.bms_sp==='1';
 const uid=()=>Date.now()*1000+Math.floor(Math.random()*1000);
 const msg=(t,e)=>{$('status').textContent=t;$('status').className=e?'err':''};
-let db=null;
-try{db=await new Promise((res,rej)=>{const r=indexedDB.open('bms',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}catch(e){msg('Local storage is unavailable (private mode?). Recordings will NOT be saved. Export them before closing.',1)}
-const kv=(m,k,v)=>new Promise((res,rej)=>{if(!db)return res(null);const tx=db.transaction('kv',m==='get'||m==='all'?'readonly':'readwrite'),s=tx.objectStore('kv');const r=m==='get'?s.get(k):m==='put'?s.put(v,k):m==='del'?s.delete(k):s.getAll();tx.oncomplete=()=>res(r.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)});
+let db=null;const dbP=Promise.race([new Promise((res,rej)=>{const r=indexedDB.open('bms',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);r.onblocked=()=>rej(new Error('blocked'))}),new Promise((_,rej)=>setTimeout(()=>rej(new Error('storage timeout')),4000))]).then(d=>{db=d}).catch(e=>{db=null;msg('Saving on this phone is not available ('+(e.message||e)+'). Recordings will NOT be kept after you close the page. Export them before closing.',1)});
+const kv=(m,k,v)=>dbP.then(()=>new Promise((res,rej)=>{if(!db)return res(null);const tx=db.transaction('kv',m==='get'||m==='all'?'readonly':'readwrite'),s=tx.objectStore('kv');const r=m==='get'?s.get(k):m==='put'?s.put(v,k):m==='del'?s.delete(k):s.getAll();tx.oncomplete=()=>res(r.result);tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error)}));
 async function dec(data){let last;const mks=[()=>new(window.OfflineAudioContext||window.webkitOfflineAudioContext)(2,1,44100),()=>S.ctx||new(window.AudioContext||window.webkitAudioContext)()];
  for(const mk of mks){try{const c=mk();return await new Promise((res,rej)=>{const p=c.decodeAudioData(data.slice(0),res,rej);if(p&&p.catch)p.catch(rej)})}catch(e){last=e}}throw last||new Error('decode failed')}
 
@@ -101,12 +132,23 @@ if(localStorage.bms_bpm)$('bpm').value=localStorage.bms_bpm;$('bpm').onchange=()
 const saveClips=()=>kv('put','clips',{kind:'clips',list:S.clips}).catch(e=>msg('Could not save edits: '+e.message,1));
 function peaksOf(buf,n=700){const d=buf.getChannelData(0),step=Math.max(1,Math.floor(d.length/n)),p=new Float32Array(n);for(let i=0;i<n;i++){let m=0;for(let j=i*step;j<Math.min(d.length,(i+1)*step);j++){const a=Math.abs(d[j]);if(a>m)m=a}p[i]=m}return p}
 const total=()=>Math.max(8,S.beat?S.beat.audio.duration:0,...S.clips.map(clipEnd));
+const PKC=new Map(),LANE0=108,LH=52,LS=56;
+function clipPk(cl){const t=S.takes.find(x=>x.id===cl.takeId);if(!t)return null;const key=cl.id+'|'+cl.off+'|'+cl.dur;let p=PKC.get(key);if(!p){const n=240,a=Math.round(cl.off*t.sr),b=Math.min(t.data.length,Math.round((cl.off+cl.dur)*t.sr)),step=Math.max(1,Math.floor((b-a)/n));p=new Float32Array(n);for(let i=0;i<n;i++){let m=0;for(let j=a+i*step;j<Math.min(b,a+(i+1)*step);j++){const v=Math.abs(t.data[j]);if(v>m)m=v}p[i]=m}if(PKC.size>400)PKC.clear();PKC.set(key,p)}return p}
 function draw(pos){const c=$('wave'),g=c.getContext('2d'),W=c.width,H=c.height,T=total();g.clearRect(0,0,W,H);
- if(S.peaks){const bw=S.beat.audio.duration/T*W,h=55;g.fillStyle='#8a6d1f';for(let x=0;x<bw;x++){const v=S.peaks[Math.floor(x/bw*S.peaks.length)]||0;g.fillRect(x,h-v*h,1,Math.max(1,v*2*h))}}
- g.globalAlpha=.85;for(const cl of S.clips){const x=cl.start/T*W,w=Math.max(2,cl.dur/T*W);g.fillStyle=cl.mute?'#555':'#46c37b';g.fillRect(x,130,w,70);if(cl.id===S.selClip){g.globalAlpha=1;g.strokeStyle='#fff';g.lineWidth=3;g.strokeRect(x,130,w,70);g.globalAlpha=.85}}g.globalAlpha=1;
+ const bar=spb()*4;g.lineWidth=1;for(let t=0,i=0;t<T;t+=spb(),i++){const x=Math.round(t/T*W)+.5;g.strokeStyle=i%4===0?'#2f2f3d':'#1b1b24';g.beginPath();g.moveTo(x,0);g.lineTo(x,H);g.stroke()}
+ if(S.peaks){const bw=S.beat.audio.duration/T*W,h=46;g.fillStyle='#8a6d1f';for(let x=0;x<bw;x++){const v=S.peaks[Math.floor(x/bw*S.peaks.length)]||0;g.fillRect(x,50-v*h,1,Math.max(1,v*2*h))}}
+ else{g.fillStyle='#55556a';g.font='15px sans-serif';g.fillText('No beat yet. Open the Beat tab to import or make one.',12,54)}
+ TN.forEach((n,k)=>{const y=LANE0+k*LS;g.fillStyle=k%2?'#14141b':'#181821';g.fillRect(0,y,W,LH);g.fillStyle='#8b8b9c';g.font='bold 13px sans-serif';g.fillText(n,6,y+14)});
+ for(const cl of S.clips){const k=cl.track||0,x=cl.start/T*W,w=Math.max(3,cl.dur/T*W),y=LANE0+k*LS,off=cl.mute||S.tracks[k].mute;
+  g.globalAlpha=off?.35:.9;g.fillStyle=TC[k]+'55';g.fillRect(x,y,w,LH);g.fillStyle=TC[k];const p=clipPk(cl);if(p){for(let i=0;i<w;i++){const v=p[Math.min(p.length-1,Math.floor(i/w*p.length))];const hh=Math.min(LH/2,v*LH*1.3+1);g.fillRect(x+i,y+LH/2-hh,1,hh*2)}}
+  g.globalAlpha=1;g.strokeStyle=cl.id===S.selClip?'#fff':TC[k];g.lineWidth=cl.id===S.selClip?3:1;g.strokeRect(x+.5,y+.5,w-1,LH-1)}
+ if(S.loop&&S.loop.b>S.loop.a){g.fillStyle='#e8b84a22';g.fillRect(S.loop.a/T*W,0,(S.loop.b-S.loop.a)/T*W,H)}
  g.fillStyle='#e8b84a';g.fillRect(S.cur/T*W,0,3,H);if(pos!=null){g.fillStyle='#fff';g.fillRect(pos/T*W,0,2,H)}
- $('cur').textContent=`Playhead ${fmtTime(S.cur)}.${Math.floor(S.cur%1*10)} · tap the timeline to move it`}
-$('wave').onclick=e=>{const r=e.target.getBoundingClientRect();S.cur=Math.max(0,(e.clientX-r.left)/r.width*total());draw()};
+ const tt=pos!=null?pos:S.cur;$('clock').textContent=`${Math.floor(tt/60)}:${String(Math.floor(tt%60)).padStart(2,'0')}.${Math.floor(tt%1*10)}`;
+ $('bpmchip').textContent=(+$('bpm').value||90)+' BPM';$('beatchip').textContent=S.beat?(S.beat.name.length>16?S.beat.name.slice(0,15)+'…':S.beat.name):'No beat'}
+$('wave').onclick=e=>{const r=e.target.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width,fy=(e.clientY-r.top)/r.height*340,t=Math.max(0,fx*total());const k=Math.floor((fy-LANE0)/LS);
+ if(k>=0&&k<4&&fy-LANE0-k*LS<LH){const cl=S.clips.find(c=>(c.track||0)===k&&t>=c.start&&t<=clipEnd(c));if(cl){S.selClip=cl.id;S.cur=Math.max(0,t);renderAll();return}}
+ S.cur=t;draw()};
 $('file').onchange=async e=>{const f=e.target.files[0];if(!f)return;
  if(S.beat&&!confirm('Replace the current beat? Your recordings are kept.'))return;
  try{const data=await f.arrayBuffer(),audio=await dec(data);S.beat={name:f.name,data,audio};S.peaks=peaksOf(audio);
@@ -119,14 +161,16 @@ function prep(){if(!S.fx.on)return;for(const cl of S.clips){if(cl.mute)continue;
 function schedule(c,dest,when,o,from=0,to=Infinity){const out=[];let first=null;
  const mk=(buf,g,at,off,dur,to=dest)=>{const s=c.createBufferSource(),n=c.createGain();s.buffer=buf;n.gain.value=g;s.connect(n).connect(to);s.start(at,off,dur);s._g=n;out.push(s);return s};
  if(S.beat&&o.beat&&from<S.beat.audio.duration){let bb=dest;if(S.dip>0){bb=c.createBiquadFilter();bb.type='peaking';bb.frequency.value=3000;bb.Q.value=1;bb.gain.value=-S.dip;bb.connect(dest)}first=mk(S.beat.audio,dbv(+$('bg').value),when,from,Math.min(to,S.beat.audio.duration)-from,bb)}
- const fxo=o.fx!==false&&S.fx.on;let vd=dest;if(o.vocal&&fxo)vd=buildChain(c,dest);if(o.vocal)for(const cl of S.clips){if(cl.mute||clipEnd(cl)<=from+0.001||cl.start>=to)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
-  const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(Math.min(clipEnd(cl),to)-cl.start-skip,t.data.length/t.sr-off);if(dur<=0)continue;const at=when+Math.max(0,cl.start-from),gA=dbv(+$('vg').value+(cl.gain||0)),fi=cl.fadeIn||0,fo=cl.fadeOut||0,src=mk(bufOf(t,fxo&&S.fx.en.gate,fxo&&S.fx.pcOn),gA,at,off,dur,vd);
+ const fxo=o.fx!==false&&S.fx.on;let vd=dest;if(o.vocal&&fxo)vd=buildChain(c,dest);const tb={},anyS=S.tracks.some(x=>x.solo);
+ const bus=k=>{if(!tb[k]){const T=S.tracks[k],g=c.createGain();g.gain.value=dbv(T.vol);let pn;if(S.sp){pn=c.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=1;const az=T.pan*Math.PI/2,x=Math.sin(az)*1.2,z=-Math.cos(az)*1.2;if(pn.positionX){pn.positionX.value=x;pn.positionY.value=0;pn.positionZ.value=z}else pn.setPosition(x,0,z)}else{pn=c.createStereoPanner();pn.pan.value=T.pan}g.connect(pn);pn.connect(vd);tb[k]=g}return tb[k]};
+ if(o.vocal)for(const cl of S.clips){const k=cl.track||0,T=S.tracks[k];if(cl.mute||T.mute||(anyS&&!T.solo)||(o.only!=null&&o.only!==k)||clipEnd(cl)<=from+0.001||cl.start>=to)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;
+  const skip=Math.max(0,from-cl.start),off=cl.off+skip,dur=Math.min(Math.min(clipEnd(cl),to)-cl.start-skip,t.data.length/t.sr-off);if(dur<=0)continue;const at=when+Math.max(0,cl.start-from),gA=dbv(+$('vg').value+(cl.gain||0)),fi=cl.fadeIn||0,fo=cl.fadeOut||0,src=mk(bufOf(t,fxo&&S.fx.en.gate,fxo&&S.fx.pcOn),gA,at,off,dur,bus(k));
   if(fi>0||fo>0){const N=64,cv=new Float32Array(N);for(let k=0;k<N;k++){const tt=skip+dur*k/(N-1);cv[k]=gA*Math.max(0,Math.min(1,fi?tt/fi:1,fo?(cl.dur-tt)/fo:1))}src._g.gain.setValueCurveAtTime(cv,at,dur)}}
  return{out,first}}
 function clicks(c,dest,t0,from,span,cin){const out=[],s=spb();const mk=(t,acc)=>{if(t<c.currentTime)return;const o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.002);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g).connect(dest);o.start(t);o.stop(t+0.06);out.push(o)};
  for(let k=cin*4;k>=1;k--)mk(t0-k*s,(cin*4-k)%4===0);
  if($('met').checked){let n=0;for(let k=Math.ceil(from/s-1e-6);k*s<from+span&&n<900;k++,n++)mk(t0+k*s-from,k%4===0)}return out}
-function stopAll(){S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='● RECORD'}
+function stopAll(){S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='●'}
 function loop(){let p=S.ctx.currentTime-S.t0;if(S.loopLen&&p>0)p%=S.loopLen;p+=S.from;if(p>=S.from)draw(p);S.raf=requestAnimationFrame(loop)}
 const spanOf=from=>Math.min(300,(S.beat?S.beat.audio.duration:total())-from);
 $('play').onclick=async()=>{if(!S.beat&&!S.clips.length)return msg('Import a beat or record something first.',1);stopAll();const c=await ctxReady();
@@ -146,7 +190,7 @@ $('rec').onclick=async()=>{if(S.rec)return stopRec();
   const mute=c.createGain();mute.gain.value=0;S.micSrc=c.createMediaStreamSource(S.mic);S.micSrc.connect(S.node);meterOn(c,S.micSrc);S.node.connect(mute).connect(c.destination);
   const cin=+$('cin').value;S.loopLen=0;S.recFrom=S.from=S.cur;prep();S.t0=c.currentTime+0.15+cin*4*spb();S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
   const r=schedule(c,c.destination,S.t0,{beat:1,vocal:$('hear').checked},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),cin)];S.rec=true;if(r.first)r.first.onended=()=>S.rec&&stopRec();
-  $('rec').classList.add('on');$('rec').textContent='■ STOP RECORDING';loop();msg(cin?'Count-in… then sing.':'Recording…')}
+  $('rec').classList.add('on');$('rec').textContent='■';loop();msg(cin?'Count-in… then sing.':'Recording…')}
  catch(err){micErr(err)}};
 function stopRec(){if(!S.rec)return;S.rec=false;S.node.port.postMessage('stop');stopAll();msg('Finishing take…')}
 async function finish(){meterOff();S.mic.getTracks().forEach(t=>t.stop());S.micSrc.disconnect();S.node.disconnect();
@@ -156,9 +200,9 @@ async function finish(){meterOff();S.mic.getTracks().forEach(t=>t.stop());S.micS
  try{await kv('put','take:'+t.id,t)}catch(e){msg('Take recorded but could not be saved to storage: '+e.message,1)}
  if(dur<0.05){renderAll();return msg('Take too short to place on the timeline.',1)}
  addClip(t,S.recFrom,off,dur);const a=analyse(data);
- msg(`${t.name} placed at ${fmtTime(S.recFrom)} · peak ${a.peakDb.toFixed(1)} dBFS${a.clipped?' · CLIPPING, re-record quieter':''}${a.silent?' · SILENT, check your mic':''}`,a.clipped||a.silent)}
+ msg(`${t.name} placed on ${TN[+$('rtrack').value]} at ${fmtTime(S.recFrom)} · peak ${a.peakDb.toFixed(1)} dBFS${a.clipped?' · CLIPPING, re-record quieter':''}${a.silent?' · SILENT, check your mic':''}`,a.clipped||a.silent)}
 // ---- clip editing ----
-function addClip(t,start,off,dur){push();const c={id:uid(),takeId:t.id,name:t.name,start,off,dur,mute:false};S.clips.push(c);S.selClip=c.id;commit()}
+function addClip(t,start,off,dur,track=+$('rtrack').value){push();const c={id:uid(),takeId:t.id,name:t.name+' · '+TN[track],start,off,dur,mute:false,track};S.clips.push(c);S.selClip=c.id;commit()}
 const push=()=>{S.hist.push(JSON.stringify(S.clips));if(S.hist.length>50)S.hist.shift()};
 function commit(){saveClips();renderAll()}
 function renderAll(){renderClips();renderTakes();draw()}
@@ -166,7 +210,7 @@ function edit(fn){const i=S.clips.findIndex(c=>c.id===S.selClip);if(i<0)return;c
 $('undo').onclick=()=>{if(!S.hist.length)return msg('Nothing to undo.',1);S.clips=JSON.parse(S.hist.pop());if(!S.clips.find(c=>c.id===S.selClip))S.selClip=null;commit();msg('Undone.')};
 function renderClips(){const el=$('clips');if(!S.clips.length){el.innerHTML='<span class="mut">No clips yet. Record, or add an original recording below.</span>';return}el.innerHTML='';
  for(const c of S.clips){const d=document.createElement('div');d.className='take'+(c.id===S.selClip?' sel':'');d.style.flexWrap='wrap';
-  d.innerHTML=`<div class="i"><b>${c.name}</b>${c.mute?' <small>(muted)</small>':''}<br><small>starts ${fmtTime(c.start)}.${Math.floor(c.start%1*10)} · length ${c.dur.toFixed(1)} s</small></div>`;
+  d.innerHTML=`<div class="i"><b>${c.name}</b>${c.mute?' <small>(muted)</small>':''}<br><small>${TN[c.track||0]} · starts ${fmtTime(c.start)}.${Math.floor(c.start%1*10)} · length ${c.dur.toFixed(1)} s</small></div>`;
   const sel=document.createElement('button');sel.textContent=c.id===S.selClip?'Selected':'Select';sel.onclick=()=>{S.selClip=c.id;renderAll()};d.append(sel);
   if(c.id===S.selClip){const g=document.createElement('div');g.style.cssText='width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px';
    const B=(t,f)=>{const b=document.createElement('button');b.textContent=t;b.style.width='100%';b.onclick=f;g.append(b)};
@@ -175,7 +219,7 @@ function renderClips(){const el=$('clips');if(!S.clips.length){el.innerHTML='<sp
    B('⇥ Move to playhead',()=>edit(x=>({...x,start:S.cur})));B(c.mute?'Unmute':'Mute',()=>edit(x=>({...x,mute:!x.mute})));
    const SLd=(l,k,mn,mx,st)=>{const w=document.createElement('label');w.style.cssText='grid-column:1/3;font-size:14px';const bb=document.createElement('b');bb.textContent=c[k]||0;const r=document.createElement('input');r.type='range';r.min=mn;r.max=mx;r.step=st;r.value=c[k]||0;r.oninput=()=>bb.textContent=r.value;r.onchange=()=>edit(x=>({...x,[k]:+r.value}));w.append(l+': ',bb,r);g.append(w)};
    SLd('Fade in (s)','fadeIn',0,3,.05);SLd('Fade out (s)','fadeOut',0,3,.05);SLd('Clip gain (dB)','gain',-24,12,.5);
-   B('✎ Rename',()=>{const n=prompt('Clip name',c.name);if(n)edit(x=>({...x,name:n}))});B('🗑 Remove clip',()=>{if(confirm(`Remove ${c.name} from the timeline? The original recording stays safe below.`)){push();S.clips=S.clips.filter(z=>z.id!==c.id);S.selClip=null;commit()}});
+   B('Track: '+TN[c.track||0]+' ▸',()=>edit(x=>({...x,track:((x.track||0)+1)%4})));B('✎ Rename',()=>{const n=prompt('Clip name',c.name);if(n)edit(x=>({...x,name:n}))});B('🗑 Remove clip',()=>{if(confirm(`Remove ${c.name} from the timeline? The original recording stays safe below.`)){push();S.clips=S.clips.filter(z=>z.id!==c.id);S.selClip=null;commit()}});
    d.append(g)}el.append(d)}}
 function renderTakes(){const el=$('takes');if(!S.takes.length){el.innerHTML='<span class="mut">None yet</span>';return}el.innerHTML='';
  for(const t of S.takes){const a=analyse(t.data),d=document.createElement('div');d.className='take';
@@ -231,7 +275,6 @@ $('auto').onclick=()=>{const segs=[];let sr=0;for(const cl of S.clips){if(cl.mut
  const tag={measured:'📏 Measured',choice:'🎛 Style choice',warn:'⚠ Warning'};
  $('report').innerHTML=`<div class="take" style="display:block"><b>Measured</b><br><small>Peak ${a.peakDb.toFixed(1)} dBFS · level ${a.rmsDb.toFixed(1)} dB · noise floor ${a.noiseFloorDb.toFixed(1)} dB · dynamic range ${a.dynRangeDb.toFixed(0)} dB</small></div>`+notes.map(([k,t])=>`<div class="take" style="display:block"><small>${tag[k]}</small><br>${t}</div>`).join('');
  msg('Effects set from your vocal. Press play to listen, and use the ON/OFF button to compare. Thresholds are starting points, so adjust by ear.')};
-renderFx();
 // ---- mix assistant & mastering ----
 S.dip=+localStorage.bms_dip||0;S.mixPrev=null;
 async function renderRaw(o){const sr=44100,dur=Math.max(o.beat&&S.beat?S.beat.audio.duration:0,...S.clips.filter(c=>!c.mute).map(clipEnd)),oc=new OfflineAudioContext(2,Math.ceil(dur*sr),sr);schedule(oc,oc.destination,0,o,0);const r=await oc.startRendering();return{ch:[r.getChannelData(0),r.getChannelData(1)],sr,dur}}
@@ -291,7 +334,7 @@ function pack(chs,sr,base){const f=$('fmt').value;
  if(!window.lamejs)return null;const kb=+f,ab=mp3Enc(chs,sr,kb),u=new Uint8Array(ab),expect=kb*125*(chs[0].length/sr);
  return u[0]===0xFF&&(u[1]&0xE0)===0xE0&&ab.byteLength>expect*0.85&&ab.byteLength<expect*1.15+4000?{ab,name:base+'.mp3',mime:'audio/mpeg',info:kb+' kbps MP3'}:null}
 // backup / restore
-$('bk').onclick=()=>{try{if(!S.beat&&!S.takes.length)return msg('Nothing to back up yet.',1);const blobs=[],meta={app:'BMS',v:1,beat:S.beat?{name:S.beat.name}:null,takes:S.takes.map(t=>({id:t.id,name:t.name,sr:t.sr})),clips:S.clips,fx:S.fx,bpm:$('bpm').value,lat:$('lat').value,bg:$('bg').value,vg:$('vg').value,dip:S.dip};
+$('bk').onclick=()=>{try{if(!S.beat&&!S.takes.length)return msg('Nothing to back up yet.',1);const blobs=[],meta={app:'BMS',v:1,beat:S.beat?{name:S.beat.name}:null,takes:S.takes.map(t=>({id:t.id,name:t.name,sr:t.sr})),clips:S.clips,fx:S.fx,tracks:S.tracks,bpm:$('bpm').value,lat:$('lat').value,bg:$('bg').value,vg:$('vg').value,dip:S.dip};
  if(S.beat)blobs.push(S.beat.data);for(const t of S.takes)blobs.push(t.data.buffer.slice(t.data.byteOffset,t.data.byteOffset+t.data.byteLength));
  const ab=packProject(meta,blobs);offer(ab,'black-mzungu-backup-'+new Date().toISOString().slice(0,10)+'.bms','application/octet-stream');msg(`Backup ready (${(ab.byteLength/1048576).toFixed(1)} MB). Tap the green link and save it to Files. Keep a copy somewhere safe.`)}catch(e){msg('Backup failed: '+(e.message||e),1)}};
 $('rs').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const p=unpackProject(await f.arrayBuffer());if(!p||p.meta.app!=='BMS')return msg('That is not a BLACK MZUNGU STUDIO backup file.',1);
@@ -299,9 +342,23 @@ $('rs').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)ret
  for(const t of S.takes)await kv('del','take:'+t.id);let bi=0;S.beat=null;S.peaks=null;
  if(p.meta.beat){const data=p.blobs[bi++];S.beat={name:p.meta.beat.name,data,audio:await dec(data)};S.peaks=peaksOf(S.beat.audio);await kv('put','beat',{kind:'beat',name:S.beat.name,data})}else await kv('del','beat');
  S.takes=[];for(const m of p.meta.takes){const t={kind:'take',id:m.id,name:m.name,sr:m.sr,data:new Float32Array(p.blobs[bi++])};S.takes.push(t);await kv('put','take:'+t.id,t)}
- S.clips=p.meta.clips||[];await saveClips();Object.assign(S.fx,p.meta.fx||{});saveFx();for(const [id,v] of [['bpm',p.meta.bpm],['lat',p.meta.lat],['bg',p.meta.bg],['vg',p.meta.vg]])if(v!=null){$(id).value=v;localStorage['bms_'+id]=v}
+ S.clips=p.meta.clips||[];if(Array.isArray(p.meta.tracks)&&p.meta.tracks.length===4){S.tracks=p.meta.tracks;saveTr();renderTracks()}await saveClips();Object.assign(S.fx,p.meta.fx||{});saveFx();for(const [id,v] of [['bpm',p.meta.bpm],['lat',p.meta.lat],['bg',p.meta.bg],['vg',p.meta.vg]])if(v!=null){$(id).value=v;localStorage['bms_'+id]=v}
  S.dip=p.meta.dip||0;localStorage.bms_dip=S.dip;for(const [id,u] of [['lat','latv'],['bg','bgv'],['vg','vgv']])$(u).textContent=$(id).value;S.selClip=S.clips[0]?S.clips[0].id:null;
  $('beatname').textContent=S.beat?S.beat.name+' · '+fmtTime(S.beat.audio.duration):'No beat loaded';renderFx();renderAll();msg('Backup restored.')}catch(err){msg('Restore failed: '+(err.message||err),1)}};
+// ---- tracks ----
+const saveTr=()=>{localStorage.bms_tracks=JSON.stringify(S.tracks)};
+function renderTracks(){const el=$('tracks');el.innerHTML='';S.tracks.forEach((T,k)=>{const d=document.createElement('div');d.className='take';d.style.cssText='display:block;border-left:4px solid '+TC[k];d.innerHTML=`<b>${TN[k]}</b>`;
+ const row=document.createElement('div');row.className='row';const m=document.createElement('button'),s=document.createElement('button');m.textContent=T.mute?'Muted':'Mute';m.style.background=T.mute?'#e5484d':'';m.onclick=()=>{T.mute=T.mute?0:1;saveTr();renderTracks();draw()};
+ s.textContent=T.solo?'Solo ON':'Solo';if(T.solo){s.style.background='#e8b84a';s.style.color='#111'}s.onclick=()=>{T.solo=T.solo?0:1;saveTr();renderTracks()};row.append(m,s);d.append(row);
+ const sl=(l,key,mn,mx,st)=>{const w=document.createElement('label'),b=document.createElement('b'),r=document.createElement('input');b.textContent=T[key];r.type='range';r.min=mn;r.max=mx;r.step=st;r.value=T[key];r.oninput=()=>{T[key]=+r.value;b.textContent=r.value;saveTr()};w.append(l+': ',b,r);d.append(w)};
+ sl('Level (dB)','vol',-24,6,.5);sl('Pan (left −1 to right +1)','pan',-1,1,.05);el.append(d)})}
+$('spatial').checked=S.sp;$('spatial').onchange=()=>{S.sp=$('spatial').checked;localStorage.bms_sp=S.sp?'1':'0';if(S.sp)msg('Spatial preview on. Use headphones. This is binaural 3D, not Dolby Atmos.')};
+if(localStorage.bms_rtrack)$('rtrack').value=localStorage.bms_rtrack;$('rtrack').onchange=()=>localStorage.bms_rtrack=$('rtrack').value;
+$('exptr').onclick=async()=>{try{const used=[...new Set(S.clips.filter(c=>!c.mute).map(c=>c.track||0))];if(!used.length)return msg('No clips to export.',1);msg('Rendering each track…');await wait();$('dl').innerHTML='';
+ for(const k of used){const R=await renderRaw({beat:0,vocal:1,fx:false,only:k});let pk=0;for(const c of R.ch)for(let i=0;i<c.length;i++)pk=Math.max(pk,Math.abs(c[i]));if(pk<1e-4)continue;if(pk>0.891){const g=0.891/pk;R.ch.forEach(c=>{for(let i=0;i<c.length;i++)c[i]*=g})}
+  const p=pack(R.ch,R.sr,'black-mzungu-track-'+TN[k].toLowerCase());if(!p)return msg('Export validation failed for '+TN[k]+'.',1);const url=URL.createObjectURL(new Blob([p.ab],{type:p.mime}));$('dl').insertAdjacentHTML('beforeend',`<a href="${url}" download="${p.name}">⬇ ${TN[k]} (${p.info})</a>`)}
+ msg('Each track exported dry (no effects) with its level and pan. All start at 0:00 so they line up in any other app.')}catch(e){msg('Track export failed: '+(e.message||e),1)}};
+renderTracks();
 // ---- export ----
 function offer(buf,name,mime='audio/wav'){const url=URL.createObjectURL(new Blob([buf],{type:mime}));$('dl').innerHTML=`<a href="${url}" download="${name}">⬇ Tap to save ${name}</a>`}
 async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!c.mute))return msg('Nothing to export yet.',1);msg('Rendering…');
@@ -315,6 +372,18 @@ async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!
 $('expmix').onclick=()=>render({beat:1,vocal:1},'black-mzungu-mix','Mix');
 $('expvox').onclick=()=>render({beat:0,vocal:1,fx:false},'black-mzungu-vocal-stem-dry','Dry vocal stem');
 $('expfx').onclick=()=>render({beat:0,vocal:1,fx:true},'black-mzungu-vocal-stem-processed','Processed vocal stem');
+// ---- app shell: tabs, pills, transport helpers ----
+const TABS=['studio','mixer','fx','beat','master','project'];
+function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('act',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='studio')draw()}
+for(const t of TABS)$('nav-'+t).onclick=()=>showTab(t);
+function renderPills(){const el=$('pills');el.innerHTML='';TN.forEach((n,k)=>{const b=document.createElement('button'),on=+$('rtrack').value===k;b.className='pill'+(on?' act':'');b.textContent=n;b.style.borderColor=TC[k];b.style.background=on?TC[k]:'';b.onclick=()=>{$('rtrack').value=k;localStorage.bms_rtrack=k;renderPills()};el.append(b)})}
+$('rewind').onclick=()=>{if(S.rec)return;stopAll();S.cur=0;draw()};
+$('loopbtn').onclick=()=>{const on=!$('loopon').checked;$('loopon').checked=on;$('loopbtn').classList.toggle('on',on);if(on&&!(S.loop.b>S.loop.a))msg('Loop is on. Set loop start and end in Studio → Recording setup.',0)};
+$('loopon').onchange=()=>$('loopbtn').classList.toggle('on',$('loopon').checked);
+$('play').onclick=((f)=>async function(){$('play').classList.add('on');try{await f()}finally{setTimeout(()=>$('play').classList.remove('on'),300)}})($('play').onclick);
+$('bpm').addEventListener('input',()=>draw());
+renderFx();renderPills();showTab(localStorage.bms_tab&&TABS.includes(localStorage.bms_tab)?localStorage.bms_tab:'studio');
+window.__bmsReady=1;window.__bms=S;
 // ---- restore ----
 try{const all=await kv('all');let list=null;
  for(const v of all||[]){if(v.kind==='beat'){S.beat={name:v.name,data:v.data,audio:await dec(v.data)};S.peaks=peaksOf(S.beat.audio);$('beatname').textContent=`${v.name} · ${fmtTime(S.beat.audio.duration)}`}else if(v.kind==='take')S.takes.push(v);else if(v.kind==='clips')list=v.list}
