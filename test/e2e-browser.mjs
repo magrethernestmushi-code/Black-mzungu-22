@@ -4,12 +4,12 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]==='
 const b=await puppeteer.launch({executablePath:await chromium.executablePath(),args:[...chromium.args,'--use-fake-ui-for-media-stream','--use-fake-device-for-media-stream','--autoplay-policy=no-user-gesture-required'],headless:'shell',defaultViewport:{width:390,height:844,deviceScaleFactor:2,isMobile:true,hasTouch:true}});
 const p=await b.newPage();const errs=[],res=[];p.on('pageerror',e=>errs.push('PAGEERROR '+e.message));p.on('console',m=>{if(m.type()==='error')errs.push('CONSOLE '+m.text())});p.on('dialog',d=>d.accept('My preset'));
 const ok=(n,c,x='')=>{res.push((c?'PASS ':'FAIL ')+n+(x?' '+x:''))};const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const click=id=>p.evaluate(i=>document.getElementById(i).click(),id);const tab=t=>click('nav-'+t);const status=()=>p.evaluate(()=>document.getElementById('status').textContent);
+const click=id=>p.evaluate(i=>document.getElementById(i).click(),id);const MAP={studio:'booth',mixer:'mix',fx:'mix',beat:'beat',master:'booth',project:'master'};const tab=t=>click('nav-'+MAP[t]);const status=()=>p.evaluate(()=>document.getElementById('status').textContent);
 const waitStatus=async(re,ms=20000)=>{const t=Date.now();while(Date.now()-t<ms){const s=await status();if(re.test(s))return s;await sleep(250)}return 'TIMEOUT: '+await status()};
 await p.goto('http://localhost:8124/',{waitUntil:'load'});await sleep(1500);
 ok('page ready, no errors',await p.evaluate(()=>window.__bmsReady===1)&&errs.length===0,errs.join('|'));
 await p.screenshot({path:'/tmp/shot_studio.png'});
-{const box=await p.evaluate(()=>{const r=document.getElementById('wave').getBoundingClientRect();return{x:r.x,y:r.y}});
+{const box=await p.evaluate(()=>{const w=document.getElementById('wave');w.scrollIntoView({block:'center'});const r=w.getBoundingClientRect();return{x:r.x,y:r.y}});await sleep(300);
  await p.mouse.click(box.x+40,box.y+22+56+2*58+10);await sleep(200);ok('tap track name arms it',(await p.evaluate(()=>document.getElementById('rtrack').value))==='2');
  await p.mouse.click(box.x+46,box.y+22+56+0*58+40);await sleep(200);ok('tap M mutes track',(await p.evaluate(()=>window.__bms.tracks[0].mute))===1);
  await p.mouse.click(box.x+46,box.y+22+56+0*58+40);await sleep(200);ok('tap M again unmutes',(await p.evaluate(()=>window.__bms.tracks[0].mute))===0);
@@ -45,6 +45,7 @@ ok('exported file has audio',ex&&ex.peak>0.01&&ex.dur>2,JSON.stringify(ex));
 // 5 mp3 export
 await p.evaluate(()=>{const f=document.getElementById('fmt');f.value='192'});await p.evaluate(()=>{document.getElementById('dl').innerHTML=''});await click('expmix');s=await waitStatus(/ready & verified|failed/i,40000);ok('mp3 export',/MP3/.test(s)&&/ready & verified/.test(s),s);
 await p.evaluate(()=>{document.getElementById('fmt').value='wav'});
+await p.evaluate(()=>{document.getElementById('fmt').value='wav24'});await p.evaluate(()=>{document.getElementById('dl').innerHTML=''});await click('expmix');s=await waitStatus(/ready & verified|failed/i,40000);ok('24-bit wav export',/24-bit WAV/.test(s)&&/ready & verified/.test(s),s);await p.evaluate(()=>{document.getElementById('fmt').value='wav'});
 // 6 vocal fx
 await tab('fx');await click('auto');s=await waitStatus(/Effects set|silent|Record a vocal/);ok('auto vocal engineer',/Effects set/.test(s)||/silent/.test(s),s);
 const rep=await p.evaluate(()=>document.getElementById('report').textContent.length);ok('report shown',rep>50||/silent/.test(s),String(rep));
@@ -66,7 +67,7 @@ await tab('studio');await p.evaluate(()=>{const l=document.getElementById('lyr')
 // 8 track mixer + mute/solo UI + master + backup
 await tab('mixer');const tr=await p.evaluate(()=>document.querySelectorAll('#tracks .take').length);ok('4 tracks shown',tr===4);await p.screenshot({path:'/tmp/shot_mixer.png'});
 await tab('master');await click('mixchk');s=await waitStatus(/Mix check done|failed|needs/i,60000);ok('mix assistant',/Mix check done/.test(s),s);
-await click('expmast');s=await waitStatus(/Master ready|failed|silence/i,90000);ok('master export',/Master ready/.test(s),s);
+await p.evaluate(()=>{document.getElementById('target').value='apple'});await click('expmast');s=await waitStatus(/Master ready|failed|silence/i,90000);ok('master export (Apple Music target)',/Master ready/.test(s)&&/target -16/.test(s),s);
 await tab('project');await p.evaluate(()=>{document.getElementById('dl').innerHTML=''});await click('bk');s=await waitStatus(/Backup ready|failed|Nothing/);ok('backup',/Backup ready/.test(s),s);
 // 9 persistence across reload
 await p.reload({waitUntil:'load'});await sleep(2000);const rs=await p.evaluate(()=>({takes:window.__bms.takes.length,clips:window.__bms.clips.length,beat:!!window.__bms.beat}));const ly=await p.evaluate(()=>document.getElementById('lyr').value);ok('data and lyrics survive reload',rs.takes===1&&rs.clips===1&&rs.beat&&ly==='Mistari yangu ya kwanza',JSON.stringify(rs)+ly);

@@ -1,6 +1,8 @@
 # BLACK MZUNGU STUDIO
 Private mobile-first vocal studio. Everything runs in the browser; audio stays on the device (IndexedDB).
 
+**UI:** V2 layout (BOOTH, BEAT, MIX, MASTER). **Beat maker:** drums, plucked guitar (Karplus-Strong), keys, 808 bass; genres Afro RnB Guitar, Bongo Flava, Amapiano Log Drum, Trap Guitar, Singeli. **Export:** WAV 16/24-bit, MP3, Apple Music target (about -16 LUFS).
+
 **Working:** FL-style playlist (track headers with arm/mute/solo, named clips, ruler), live input visualizer with level guide, mic processing mode + gain + Bluetooth warning, take review (listen, keep, delete, undo), re-take muting, timeline zoom, one-tap Producer tab (Swahili guide + Auto Produce with before/after), lyrics pad, tabbed studio UI (Studio, Mixer, Vocal FX, Beat, Master, Project), 4 vocal tracks with level/pan/mute/solo, spatial (HRTF) preview, beat import (MP3/WAV/M4A), beat maker (rule-based, 5 genres), multi-take recording with metronome, count-in, loop, input device selector, live meters and spectrum, clip editing (split, trim, move, duplicate, fades, gain, undo), auto vocal engineer (measures the vocal, sets HPF/EQ/sibilance/compressor/reverb/delay/gate), 10 editable presets + your own, experimental pitch correction, Mix Assistant, loudness-targeted mastering (limiter + true-peak ceiling), WAV and MP3 export with validation, project backup/restore (.bms).
 
 **Not built yet:** true de-esser, noise reduction beyond the gate, AI models (denoise, stem separation), loudness-matched A/B preview, drag editing, projects list.

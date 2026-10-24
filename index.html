@@ -1,58 +1,69 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b0b0f"><title>BLACK MZUNGU STUDIO</title>
+<meta name="theme-color" content="#0a0a0a"><title>BLACK MZUNGU STUDIO V2</title>
 <style>
-:root{--bg:#0b0b0f;--p1:#15151c;--p2:#1e1e29;--line:#2b2b38;--tx:#f1f1f6;--mut:#8b8b9c;--acc:#e8b84a;--rec:#ff3b4e;--ok:#37d67a}
+:root{--bg:#0a0a0a;--p1:#151515;--p2:#222;--line:#2b2b2b;--tx:#fff;--mut:#8b8b9c;--acc:#fff;--rec:#ff0033;--ok:#37d67a;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 -apple-system,system-ui,sans-serif;padding-bottom:calc(132px + env(safe-area-inset-bottom))}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 Inter,system-ui,-apple-system,sans-serif;padding-bottom:calc(120px + env(safe-area-inset-bottom))}
 #errbar{display:none;position:sticky;top:0;z-index:50;background:#7a1620;color:#fff;padding:10px 14px;font-size:14px}
-.top{position:sticky;top:0;z-index:30;background:linear-gradient(#17171f,#0e0e13);border-bottom:1px solid var(--line);padding:max(8px,env(safe-area-inset-top)) 12px 10px}
-.brand{font-weight:800;letter-spacing:.2em;font-size:11px;color:var(--acc)}
-.clockrow{display:flex;align-items:center;justify-content:space-between;margin:2px 0 8px}
-.time{font:700 34px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.02em}
-.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.chip{background:var(--p2);border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--mut)}
-.tr{display:flex;gap:12px;justify-content:center}
-.rb{width:56px;height:56px;min-height:0;border-radius:50%;border:1px solid var(--line);background:var(--p2);color:var(--tx);font-size:21px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
-.rb.pl{background:var(--ok);border-color:var(--ok);color:#06210f}.rb.rec{background:var(--rec);border-color:var(--rec);color:#fff}.rb.rec.on{background:#fff;color:var(--rec);animation:pulse 1s infinite}.rb.on{box-shadow:0 0 0 3px #e8b84a88}
-@keyframes pulse{50%{box-shadow:0 0 0 8px #ff3b4e44}}
-main{padding:10px 12px}.tab{display:none}
+.top{position:sticky;top:0;z-index:30;background:#111;border-bottom:1px solid var(--line);padding:max(6px,env(safe-area-inset-top)) 0 8px}
+.tab{display:flex;gap:8px;padding:8px 12px;overflow-x:auto}
+.tab button{background:#222;border:0;color:#fff;padding:10px 18px;border-radius:20px;width:auto;flex:1;min-height:40px;margin:0;font-weight:600;font-size:14px;letter-spacing:.04em}
+.tab button.active{background:#fff;color:#000}
+.clockrow{display:flex;align-items:center;justify-content:space-between;padding:2px 14px 6px}
+.time{font:700 28px/1 ui-monospace,SFMono-Regular,Menlo,monospace}
+.chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}.chip{background:#222;border:1px solid var(--line);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--mut)}
+.tr{display:flex;gap:10px;justify-content:center}
+.rb{width:48px;height:48px;min-height:0;border-radius:50%;border:1px solid var(--line);background:#222;color:#fff;font-size:18px;padding:0;margin:0;display:flex;align-items:center;justify-content:center}
+.rb.pl{background:var(--ok);border-color:var(--ok);color:#06210f}.rb.on{box-shadow:0 0 0 3px #e8b84a88}
+main{padding:10px 12px}.pg{display:none}
 .card{background:var(--p1);border:1px solid var(--line);border-radius:16px;padding:14px;margin:0 0 12px}
 h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:0 0 10px}
+h1{font-size:18px;margin:4px 0 2px;text-align:center}
 small,.mut{color:var(--mut)}
-button,.btn{background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;min-height:48px;width:100%;margin:4px 0;text-align:center;display:block}
-button.p{background:var(--acc);color:#111;font-weight:700;border-color:var(--acc)}
+button,.btn{background:#222;color:#fff;border:1px solid var(--line);border-radius:12px;padding:13px;font-size:16px;min-height:48px;width:100%;margin:4px 0;text-align:center;display:block}
+button.p{background:#fff;color:#000;font-weight:800;border-color:#fff;border-radius:30px}
+.bigrec{width:140px;height:140px;border-radius:50%;background:var(--rec);border:0;color:#fff;font-size:20px;font-weight:800;margin:12px auto;display:block;min-height:0;padding:0}
+.bigrec.on{background:#fff;color:var(--rec);animation:pulse 1s infinite}@keyframes pulse{50%{box-shadow:0 0 0 12px #ff003344}}
 .row{display:flex;gap:8px}.row>*{flex:1}
-input[type=range]{width:100%;height:32px;accent-color:var(--acc)}input[type=number],select{background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:10px}
+input[type=range]{width:100%;height:32px;accent-color:#fff}input[type=number],select{background:#222;color:#fff;border:1px solid var(--line);border-radius:10px}
 select{width:100%;padding:12px;font-size:16px}
-canvas{width:100%;display:block;border-radius:12px;background:#0c0c11}
-#wave{width:100%;height:310px}#meter{aspect-ratio:700/150}
-.pills{display:flex;gap:8px;flex-wrap:wrap}.pill{width:auto;flex:1;min-width:70px;border-radius:24px;padding:10px 6px;min-height:44px;font-size:14px;margin:0}.pill.act{color:#111;font-weight:700}
-.take{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0;background:var(--p2)}.take.sel{border-color:var(--acc)}.take .i{flex:1;min-width:0}.take button{width:auto;min-height:40px;padding:8px 12px;margin:0}
-#status{position:fixed;left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));z-index:40;background:#101016ee;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;max-height:90px;overflow:auto;backdrop-filter:blur(8px)}
+canvas{width:100%;display:block;border-radius:12px;background:#151515}
+#wave{width:100%;height:310px}#meter{aspect-ratio:700/150;margin:10px 0}
+.take{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:8px;margin:6px 0;background:#222}.take.sel{border-color:#fff}.take .i{flex:1;min-width:0}.take button{width:auto;min-height:40px;padding:8px 12px;margin:0}
+#status{position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:40;background:#101010ee;border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:13px;max-height:90px;overflow:auto;backdrop-filter:blur(8px)}
 #status.err{border-color:var(--rec);color:#ffb4b6}
 #dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
-nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;background:#0e0e13f2;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(10px)}
-nav button{flex:1;border:0;border-radius:0;background:transparent;min-height:58px;padding:6px 0;margin:0;font-size:11px;color:var(--mut);width:auto}nav button b{display:block;font-size:20px;font-weight:400}nav button.act{color:var(--acc)}
-summary{padding:6px 0;color:var(--acc)}.mini{min-height:38px;padding:6px 16px;width:auto;margin:0;flex:none}audio{width:100%;margin:4px 0}textarea{width:100%;min-height:200px;background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:18px;line-height:1.6;font-family:inherit;resize:vertical}label{display:block}
+.mini{min-height:38px;padding:6px 16px;width:auto;margin:0;flex:none}
+summary{padding:6px 0;color:#fff}label{display:block}audio{width:100%;margin:4px 0}
+textarea{width:100%;min-height:120px;background:#151515;color:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;font-size:17px;line-height:1.6;font-family:inherit;resize:vertical}
 </style></head><body>
 <div id="errbar"></div>
 <header class="top">
- <div class="brand">BLACK MZUNGU STUDIO</div>
+ <div class="tab"><button id="nav-booth" class="active">BOOTH</button><button id="nav-beat">BEAT</button><button id="nav-mix">MIX</button><button id="nav-master">MASTER</button></div>
  <div class="clockrow"><div id="clock" class="time">0:00.0</div><div class="chips"><span class="chip" id="fxchip" style="cursor:pointer">FX OFF</span><span class="chip" id="bpmchip" style="cursor:pointer">90 BPM</span><span class="chip" id="beatchip">No beat</span></div></div>
- <div class="tr"><button id="rewind" class="rb" aria-label="Back to start">⏮</button><button id="stop" class="rb" aria-label="Stop">■</button><button id="play" class="rb pl" aria-label="Play">▶</button><button id="rec" class="rb rec" aria-label="Record">●</button><button id="loopbtn" class="rb" aria-label="Loop">🔁</button></div>
+ <div class="tr"><button id="rewind" class="rb" aria-label="Back to start">⏮</button><button id="stop" class="rb" aria-label="Stop">■</button><button id="play" class="rb pl" aria-label="Play">▶</button><button id="loopbtn" class="rb" aria-label="Loop">🔁</button></div>
 </header>
 <main>
-<section class="tab" id="tab-studio">
+<section class="pg" id="tab-booth">
+ <div class="card" style="text-align:center"><h1>BOOTH</h1>
+  <canvas id="meter" width="700" height="150"></canvas><div id="peak" class="mut">Tap “Test mic” to see your level and spectrum, or press REC.</div><div id="micwarn" style="display:none;color:#ffb4b6;margin-top:6px;font-size:13px;text-align:left"></div>
+  <button id="mictest">🎚 Test mic</button>
+  <button id="rec" class="bigrec" aria-label="Record">REC</button><div id="rateinfo" class="mut">Private • On device</div>
+  <small>Recording goes to the armed track (tap a track name below). It starts at the playhead, after the count-in. Use headphones.</small></div>
  <div class="card" style="padding:8px"><canvas id="wave"></canvas>
   <div class="row" style="margin-top:8px;align-items:center"><button id="zout" class="mini" aria-label="Zoom out">−</button><button id="zin" class="mini" aria-label="Zoom in">＋</button><button id="zfit" class="mini">Fit</button><input id="scroll" type="range" min="0" max="1000" value="0" style="flex:3" aria-label="Scroll timeline"></div>
-  <div id="cur" class="mut" style="font-size:12px;margin-top:6px">Tap a track name to arm it for recording. Tap a clip to edit it. Tap the timeline to move the playhead.</div></div>
- <div class="card"><h2>Live input</h2><button id="mictest">🎚 Test mic</button><canvas id="meter" width="700" height="150"></canvas><div id="peak" class="mut">Tap “Test mic” to see your level and spectrum, or press ● to record.</div><div id="micwarn" style="display:none;color:#ffb4b6;margin-top:6px;font-size:13px"></div></div>
+  <div id="cur" class="mut" style="font-size:12px;margin-top:6px">Tap a track name to arm it. Tap a clip to edit it. Tap the timeline to move the playhead.</div></div>
  <div class="card" id="review" style="display:none"><h2>Take review</h2><div id="rvinfo"></div>
   <div id="rvbtns"><div class="row"><button id="rvsolo">▶ Listen: take only</button><button id="rvmix">▶ Listen: with beat</button></div><div class="row"><button id="rvkeep" class="p">✓ Keep</button><button id="rvdel" style="background:#3a1620;border-color:#7a1620">🗑 Delete</button></div></div>
   <button id="rvundo" style="display:none">↶ Undo delete</button></div>
  <div class="card"><h2>Selected clip</h2><div id="clips"><span class="mut">Tap a clip on the timeline to edit it.</span></div><button id="undo">↶ Undo last edit</button></div>
- <div class="card"><h2>Lyrics</h2><textarea id="lyr" placeholder="Write or paste your lyrics here. They are saved on this phone."></textarea></div>
+ <div class="card"><h2>✨ Auto Produce</h2><div id="coachlist"></div><small>One tap: the studio measures your vocal, shapes it (EQ, compression, reverb), balances it against the beat, then masters the result. This is real audio measurement and processing, not a generative AI. Compare Before and After, then fine-tune in MIX.</small>
+  <label style="margin-top:8px">Song style<select id="pstyle"><option value="bongo">Bongo Flava / Afro</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="natural">Natural (light processing)</option></select></label>
+  <label>Where is it going?<select id="ptarget"><option value="apple">Apple Music (about −16 LUFS)</option><option value="streaming" selected>Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live / PA (about −9 LUFS)</option></select></label>
+  <button id="autoprod" class="p">✨ AUTO PRODUCE</button><div id="prodlog"></div><div id="prodout"></div><button id="produndo">↶ Restore my previous settings</button></div>
+ <div class="card"><h2>Lyrics</h2><textarea id="lyr" placeholder="Type lyrics here..."></textarea></div>
  <details class="card"><summary>Recording settings</summary>
   <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:12px;font-size:16px"></label><label>Count-in<select id="cin"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div>
   <label><input type="checkbox" id="met" checked> Metronome on</label><label><input type="checkbox" id="hear" checked> Hear my other vocals while recording</label><label><input type="checkbox" id="loopon"> Loop playback (not while recording)</label>
@@ -65,17 +76,26 @@ summary{padding:6px 0;color:var(--acc)}.mini{min-height:38px;padding:6px 16px;wi
  <div id="pills" hidden></div><select id="rtrack" hidden><option value="0">Lead</option><option value="1">Double</option><option value="2">Harmony</option><option value="3">Ad-lib</option></select>
 </section>
 
-<section class="tab" id="tab-mixer">
- <div class="card"><h2>Levels</h2>
+<section class="pg" id="tab-beat">
+ <div class="card"><h1>BEAT MAKER</h1>
+  <small>Builds a beat from synthesised instruments (drums, plucked guitar, keys, 808 bass) following a step pattern in your key. It is rule-based, not a generative AI model, and it uses no recorded samples. Tap the squares to change the pattern.</small>
+  <label style="margin-top:10px">Genre<select id="genre"><option value="afrornb">Afro RnB Guitar</option><option value="bongoflava">Bongo Flava</option><option value="amapianolog">Amapiano Log Drum</option><option value="trapguitar">Trap Guitar</option><option value="singeli">Singeli</option></select></label>
+  <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px"><label><input type="checkbox" id="ibeat" checked> Beat (drums)</label><label><input type="checkbox" id="iguitar" checked> Guitar</label><label><input type="checkbox" id="ikeys"> Keys / Piano</label><label><input type="checkbox" id="i808" checked> 808 Bass</label></div>
+  <div class="row" style="margin-top:8px"><label>Key<select id="bkey"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select></label><label>Scale<select id="bscale"><option value="minor">Minor</option><option value="major">Major</option></select></label></div>
+  <div class="row"><label>Length<select id="bars"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
+  <small>Tempo uses the BPM in BOOTH → Recording settings (or tap the BPM chip at the top).</small><div id="grid"></div>
+  <button id="mkbeat" class="p">GENERATE BEAT</button></div>
+ <div class="card"><h2>Use your own beat</h2><label class="btn" for="file">Import beat (MP3 / WAV / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden><div id="beatname" class="mut">No beat loaded</div></div>
+</section>
+
+<section class="pg" id="tab-mix">
+ <div class="card"><h1>MIX</h1><h2>Levels</h2>
   <label>Beat level: <b id="bgv">0</b> dB<input id="bg" type="range" min="-24" max="6" step="0.5" value="0"></label>
   <label>All vocals level: <b id="vgv">0</b> dB<input id="vg" type="range" min="-24" max="12" step="0.5" value="0"></label></div>
  <div class="card"><h2>Tracks</h2><div id="tracks"></div>
   <label><input type="checkbox" id="spatial"> Spatial preview (3D for headphones, NOT Dolby Atmos)</label>
   <small>Pan a track and, with this on, it moves around your head in 3D. Best on headphones; it can sound thin on a phone speaker or in mono. Changes apply next time you press play.</small></div>
-</section>
-
-<section class="tab" id="tab-fx">
- <div class="card"><h2>Vocal engineer</h2><small>Measures your recorded vocal, then sets the effects from those measurements. Runs on this phone with no internet. It is measurement-based processing, not a neural-network model.</small>
+ <div class="card"><h2>Vocal engineer</h2><small>Measures your recorded vocal, then sets the effects from those measurements. Runs on this phone with no internet.</small>
   <label style="margin-top:8px">Style (reverb and delay taste)<select id="style"><option value="natural">Natural</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="bongo">Bongo Flava / Afro</option></select></label>
   <button id="auto" class="p">Analyse my vocal &amp; set effects</button><button id="fxon">Vocal processing: ON</button><button id="fxundo">↶ Undo auto-set</button><div id="report"></div></div>
  <div class="card"><h2>Presets (starting points)</h2><select id="preset"></select><div class="row"><button id="presapply">Apply</button><button id="pressave">Save mine</button><button id="presdel">Delete mine</button></div></div>
@@ -83,38 +103,20 @@ summary{padding:6px 0;color:var(--acc)}.mini{min-height:38px;padding:6px 16px;wi
   <div class="row"><select id="pckey"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select><select id="pcscale"><option value="major">Major</option><option value="minor">Minor</option><option value="chromatic">Chromatic</option></select></div>
   <label>Strength <b id="pcv">100</b>%<input id="pcstr" type="range" min="0" max="100" value="100"></label></div>
  <details class="card"><summary>Adjust each effect</summary><div id="fxui"></div><small>Changes apply the next time you press play.</small></details>
-</section>
-
-<section class="tab" id="tab-beat">
- <div class="card"><h2>Beat</h2><label class="btn" for="file">Import beat (MP3 / WAV / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden><div id="beatname" class="mut">No beat loaded</div></div>
- <div class="card"><h2>Beat maker</h2><small>Makes a beat from simple synthesised sounds using a step pattern. Rule-based, not generative AI, no samples. Tap squares to edit.</small>
-  <label style="margin-top:8px">Genre<select id="genre"><option value="afrobeats">Afrobeats</option><option value="amapiano">Amapiano</option><option value="bongoflava">Bongo Flava</option><option value="melodicrap">Melodic rap</option><option value="rnb">R&amp;B</option></select></label>
-  <div class="row"><label>Key<select id="bkey"><option value="0">C</option><option value="1">C#</option><option value="2">D</option><option value="3">D#</option><option value="4">E</option><option value="5">F</option><option value="6">F#</option><option value="7">G</option><option value="8">G#</option><option value="9">A</option><option value="10">A#</option><option value="11">B</option></select></label><label>Scale<select id="bscale"><option value="minor">Minor</option><option value="major">Major</option></select></label></div>
-  <div class="row"><label>Length<select id="bars"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
-  <small>Tempo uses the BPM in Studio → Recording setup.</small><div id="grid"></div><button id="mkbeat" class="p">Make beat &amp; use it</button></div>
-</section>
-
-<section class="tab" id="tab-master">
- <div class="card"><h2>Your steps</h2><div id="coachlist"></div></div>
- <div class="card"><h2>🎯 One-tap Producer</h2><small>One tap: the studio measures your vocal, shapes it (EQ, compression, reverb), balances it against the beat, then masters the result. This is real audio measurement and processing, not a generative AI. The settings are starting points: compare Before and After, then fine-tune in Vocal FX or Mixer.</small>
-  <label style="margin-top:8px">Song style<select id="pstyle"><option value="bongo">Bongo Flava / Afro</option><option value="pop">Clean pop</option><option value="dryrap">Dry rap</option><option value="natural">Natural (light processing)</option></select></label>
-  <label>Where is it going?<select id="ptarget"><option value="streaming">Streaming (Spotify, YouTube, Boomplay)</option><option value="download">Download / DJ</option><option value="live">Live / PA</option></select></label>
-  <button id="autoprod" class="p">🎯 Produce my song</button><div id="prodlog"></div><div id="prodout"></div><button id="produndo">↶ Restore my previous settings</button></div>
  <div class="card"><h2>Mix Assistant</h2><small>Measures your beat, vocal and mix, and labels what is measured versus a taste suggestion. Nothing changes until you tap Apply.</small>
   <button id="mixchk" class="p">Check my mix</button><div id="mixrep"></div><button id="mixundo">↶ Undo applied suggestions</button></div>
- <div class="card"><h2>Master</h2><label>Target<select id="target"><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
-  <button id="expmast" class="p">Master &amp; export</button><small>Loudness target + lookahead limiter with a −1 dBTP ceiling. It will not squash harder than about 5 dB of limiting, so it may land a little under the target. Keep this screen open while it works.</small></div>
 </section>
 
-<section class="tab" id="tab-project">
- <div class="card"><h2>Export</h2><label>File type<select id="fmt"><option value="wav">WAV (best quality)</option><option value="192">MP3 192 kbps</option><option value="320">MP3 320 kbps</option></select></label>
+<section class="pg" id="tab-master">
+ <div class="card"><h1>MASTER</h1><label>Target<select id="target"><option value="apple">Apple Music (about −16 LUFS)</option><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
+  <button id="expmast" class="p">Master &amp; export</button><small>Loudness target + lookahead limiter with a −1 dBTP ceiling. It will not squash harder than about 5 dB of limiting, so it may land a little under the target. Keep this screen open while it works. Apple Music’s own loudness setting works around −16 LUFS; no software can promise how a service will treat your file.</small></div>
+ <div class="card"><h2>Export</h2><label>File type<select id="fmt"><option value="wav">WAV 16-bit</option><option value="wav24">WAV 24-bit (for distributors)</option><option value="192">MP3 192 kbps</option><option value="320">MP3 320 kbps</option></select></label>
   <button id="expmix" class="p">Export full mix</button><button id="expvox">Export vocal stem, dry</button><button id="expfx">Export vocal stem, processed</button><button id="exptr">Export each track separately (dry)</button><div id="dl"></div></div>
  <div class="card"><h2>Backup</h2><small>Browser data can be erased by the phone. Download a backup now and then.</small><button id="bk">Download project backup (.bms)</button><label class="btn" for="rs">Restore from backup (.bms)</label><input id="rs" type="file" accept=".bms,application/octet-stream" hidden></div>
  <div class="card"><h2>Original recordings</h2><small>Raw takes are never changed. Add one back to the timeline anytime.</small><div id="takes"><span class="mut">None yet</span></div></div>
 </section>
 </main>
 <div id="status">Ready.</div>
-<nav><button id="nav-studio"><b>🎚</b>Studio</button><button id="nav-mixer"><b>🎛</b>Mixer</button><button id="nav-fx"><b>✨</b>Vocal FX</button><button id="nav-beat"><b>🥁</b>Beat</button><button id="nav-master"><b>🎯</b>Producer</button><button id="nav-project"><b>📁</b>Project</button></nav>
 <script>
 (function(){var b=document.getElementById('errbar');function s(m){b.style.display='block';b.textContent='⚠ '+m}
 addEventListener('error',function(e){s(e.message||'Error')});addEventListener('unhandledrejection',function(e){s((e.reason&&e.reason.message)||String(e.reason))});
@@ -123,7 +125,7 @@ setTimeout(function(){if(!window.__bmsReady)s('The studio did not start. Pull do
 <script src="lame.min.js"></script>
 <script type="module">
 import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio,pitchCorrect,PRESETS,packProject,unpackProject,limiter} from './dsp.js';
-import {renderBeat,GENRES,ROWS} from './beat.js';
+import {renderBeat,GENRES,ROWS,GROUPS} from './beat.js';
 const $=id=>document.getElementById(id);
 const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
 const TN=['Lead','Double','Harmony','Ad-lib'],TC=['#46c37b','#4aa3ff','#c77dff','#ff9f4a'];
@@ -138,7 +140,7 @@ async function dec(data){let last;const mks=[()=>new(window.OfflineAudioContext|
  for(const mk of mks){try{const c=mk();return await new Promise((res,rej)=>{const p=c.decodeAudioData(data.slice(0),res,rej);if(p&&p.catch)p.catch(rej)})}catch(e){last=e}}throw last||new Error('decode failed')}
 
 const lat=()=>+$('lat').value, dbv=x=>Math.pow(10,x/20), spb=()=>60/Math.max(40,Math.min(240,+$('bpm').value||90));
-async function ctxReady(){if(!S.ctx)S.ctx=new(window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive'});if(S.ctx.state!=='running')await S.ctx.resume();return S.ctx}
+async function ctxReady(){if(!S.ctx){const AC=window.AudioContext||window.webkitAudioContext;try{S.ctx=new AC({latencyHint:'interactive',sampleRate:48000})}catch{S.ctx=new AC({latencyHint:'interactive'})}$('rateinfo').textContent=`${(S.ctx.sampleRate/1000).toFixed(1)} kHz • Private • On device`}if(S.ctx.state!=='running')await S.ctx.resume();return S.ctx}
 for(const [id,u] of [['lat','latv'],['bg','bgv'],['vg','vgv']]){const k='bms_'+id;if(localStorage[k]!=null)$(id).value=localStorage[k];$(u).textContent=$(id).value;$(id).oninput=()=>{$(u).textContent=$(id).value;localStorage[k]=$(id).value}}
 if(localStorage.bms_bpm)$('bpm').value=localStorage.bms_bpm;$('bpm').onchange=()=>localStorage.bms_bpm=$('bpm').value;
 const saveClips=()=>kv('put','clips',{kind:'clips',list:S.clips}).catch(e=>msg('Could not save edits: '+e.message,1));
@@ -200,7 +202,7 @@ function schedule(c,dest,when,o,from=0,to=Infinity){const out=[];let first=null;
 function clicks(c,dest,t0,from,span,cin){const out=[],s=spb();const mk=(t,acc)=>{if(t<c.currentTime)return;const o=c.createOscillator(),g=c.createGain();o.frequency.value=acc?1600:1000;g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.35,t+0.002);g.gain.exponentialRampToValueAtTime(0.0001,t+0.05);o.connect(g).connect(dest);o.start(t);o.stop(t+0.06);out.push(o)};
  for(let k=cin*4;k>=1;k--)mk(t0-k*s,(cin*4-k)%4===0);
  if($('met').checked){let n=0;for(let k=Math.ceil(from/s-1e-6);k*s<from+span&&n<900;k++,n++)mk(t0+k*s-from,k%4===0)}return out}
-function stopAll(){clearTimeout(S.lt);S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='●'}
+function stopAll(){clearTimeout(S.lt);S.live.forEach(s=>{try{s.stop()}catch{}});S.live=[];cancelAnimationFrame(S.raf);$('rec').classList.remove('on');$('rec').textContent='REC'}
 function loop(){let p=S.ctx.currentTime-S.t0;if(S.loopLen&&p>0)p%=S.loopLen;p+=S.from;if(S.zoom>1){const D=total()/S.zoom;if(p>S.view+D*.92||p<S.view)S.view=Math.max(0,p-D*.1)}if(p>=S.from)draw(p);S.raf=requestAnimationFrame(loop)}
 const spanOf=from=>Math.min(300,(S.beat?S.beat.audio.duration:total())-from);
 $('play').onclick=async()=>{if(!S.beat&&!S.clips.length)return msg('Import a beat or record something first.',1);stopAll();const c=await ctxReady();
@@ -220,7 +222,7 @@ $('rec').onclick=async()=>{if(S.rec)return stopRec();
   const mute=c.createGain();mute.gain.value=0;S.micSrc=c.createMediaStreamSource(S.mic);S.micSrc.connect(S.node);meterOn(c,S.micSrc);S.node.connect(mute).connect(c.destination);
   $('review').style.display='none';const cin=+$('cin').value;S.loopLen=0;S.recFrom=S.from=S.cur;prep();S.t0=c.currentTime+0.15+cin*4*spb();S.node.port.postMessage({go:Math.round(S.t0*c.sampleRate)});
   const r=schedule(c,c.destination,S.t0,{beat:1,vocal:$('hear').checked},S.from);S.live=[...r.out,...clicks(c,c.destination,S.t0,S.from,spanOf(S.from),cin)];S.rec=true;if(r.first)r.first.onended=()=>S.rec&&stopRec();
-  $('rec').classList.add('on');$('rec').textContent='■';loop();msg(cin?'Count-in… then sing.':'Recording…')}
+  $('rec').classList.add('on');$('rec').textContent='STOP';loop();msg(cin?'Count-in… then sing.':'Recording…')}
  catch(err){micErr(err)}};
 function stopRec(){if(!S.rec)return;S.rec=false;S.node.port.postMessage('stop');stopAll();msg('Finishing take…')}
 async function finish(){meterOff();S.mic.getTracks().forEach(t=>t.stop());S.micSrc.disconnect();S.node.disconnect();
@@ -350,12 +352,12 @@ S.loop={a:0,b:0};S.loopLen=0;
 const lt=()=>{$('looptxt').textContent=S.loop.b>S.loop.a?`Loop ${tf(S.loop.a)} to ${tf(S.loop.b)} (${(S.loop.b-S.loop.a).toFixed(1)} s)`:'Move the playhead, then set loop start and end.'};
 $('loopa').onclick=()=>{S.loop.a=S.cur;lt()};$('loopb').onclick=()=>{S.loop.b=S.cur;lt();if(S.loop.b<=S.loop.a)msg('Loop end must be after loop start.',1)};
 // beat maker
-S.pat={...GENRES.afrobeats.p};
+S.pat={...GENRES.afrornb.p};const instRows=()=>[...($('ibeat').checked?GROUPS.beat:[]),...($('iguitar').checked?GROUPS.guitar:[]),...($('ikeys').checked?GROUPS.keys:[]),...($('i808').checked?GROUPS.bass808:[])];
 function renderGrid(){const g=$('grid');g.innerHTML='';for(const r of ROWS){const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:2px;margin:2px 0';const l=document.createElement('span');l.textContent=r;l.style.cssText='width:44px;font-size:12px;color:#8c8c99';row.append(l);const p=S.pat[r]||'................';
  for(let i=0;i<16;i++){const b=document.createElement('button');b.style.cssText=`flex:1;min-height:30px;padding:0;margin:0;border-radius:6px;${i%4===0?'border-color:#666;':''}background:${p[i]==='x'?'#e8b84a':'#24242d'}`;b.onclick=()=>{const a=(S.pat[r]||'................').split('');a[i]=a[i]==='x'?'.':'x';S.pat[r]=a.join('');renderGrid()};row.append(b)}g.append(row)}}
 $('genre').onchange=()=>{const g=GENRES[$('genre').value];S.pat={...g.p};$('bpm').value=g.bpm;localStorage.bms_bpm=g.bpm;$('swing').value=g.swing;renderGrid()};
-$('mkbeat').onclick=async()=>{try{if(S.beat&&!confirm('Replace the current beat with the new one? Your recordings are kept.'))return;msg('Making the beat…');await wait();
- const g=GENRES[$('genre').value],full=$('bars').value==='song',r=renderBeat({pattern:S.pat,bpm:+$('bpm').value||g.bpm,swing:+$('swing').value,key:+$('bkey').value,scale:$('bscale').value,bars:full?4:+$('bars').value,song:full,sr:44100});
+$('mkbeat').onclick=async()=>{try{if(!instRows().length)return msg('Tick at least one instrument.',1);if(S.beat&&!confirm('Replace the current beat with the new one? Your recordings are kept.'))return;msg('Making the beat…');await wait();
+ const g=GENRES[$('genre').value],full=$('bars').value==='song',r=renderBeat({pattern:S.pat,bpm:+$('bpm').value||g.bpm,swing:+$('swing').value,key:+$('bkey').value,scale:$('bscale').value,bars:full?4:+$('bars').value,song:full,sr:44100,rows:instRows()});
  const data=wavEncode([r.L,r.R],r.sr),b=new AudioBuffer({length:r.L.length,sampleRate:r.sr,numberOfChannels:2});b.copyToChannel(r.L,0);b.copyToChannel(r.R,1);
  S.beat={name:'Beat: '+$('genre').selectedOptions[0].text,data,audio:b};S.peaks=peaksOf(b);await kv('put','beat',{kind:'beat',name:S.beat.name,data});$('beatname').textContent=`${S.beat.name} · ${fmtTime(r.dur)}`;draw();
  offer(data,'black-mzungu-beat.wav');msg(`Beat ready (${fmtTime(r.dur)}) and loaded. Press play to hear it, or tap the green link to save it.`)}catch(e){msg('Could not make the beat: '+(e.message||e),1)}};
@@ -365,7 +367,7 @@ function mp3Enc(chs,sr,kbps){const e=new lamejs.Mp3Encoder(chs.length,sr,kbps),p
  for(let i=0;i<L.length;i+=1152){const b=R?e.encodeBuffer(L.subarray(i,i+1152),R.subarray(i,i+1152)):e.encodeBuffer(L.subarray(i,i+1152));if(b.length)parts.push(b)}const f=e.flush();if(f.length)parts.push(f);
  const n=parts.reduce((a,p)=>a+p.length,0),out=new Uint8Array(n);let o=0;for(const p of parts){out.set(p,o);o+=p.length}return out.buffer}
 function pack(chs,sr,base){const f=$('fmt').value;
- if(f==='wav'){const ab=wavEncode(chs,sr),v=validateWav(ab);return v.ok&&v.frames===chs[0].length&&v.sr===sr&&v.ch===chs.length?{ab,name:base+'.wav',mime:'audio/wav',info:'16-bit WAV'}:null}
+ if(f==='wav'||f==='wav24'){const bits=f==='wav24'?24:16,ab=wavEncode(chs,sr,bits),v=validateWav(ab);return v.ok&&v.frames===chs[0].length&&v.sr===sr&&v.ch===chs.length&&v.bits===bits?{ab,name:base+'.wav',mime:'audio/wav',info:bits+'-bit WAV'}:null}
  if(!window.lamejs)return null;const kb=+f,ab=mp3Enc(chs,sr,kb),u=new Uint8Array(ab),expect=kb*125*(chs[0].length/sr);
  return u[0]===0xFF&&(u[1]&0xE0)===0xE0&&ab.byteLength>expect*0.85&&ab.byteLength<expect*1.15+4000?{ab,name:base+'.mp3',mime:'audio/mpeg',info:kb+' kbps MP3'}:null}
 // backup / restore
@@ -454,8 +456,8 @@ $('rvdel').onclick=()=>{const cl=rvClip();if(!cl)return;stopAll();const t=S.take
  $('rvinfo').innerHTML='<b>Take deleted.</b>';$('rvbtns').style.display='none';$('rvundo').style.display='block';msg('Take deleted. You can undo it right now.')};
 $('rvundo').onclick=async()=>{const d=S.lastDel;if(!d)return;S.lastDel=null;S.takes.push(d.take);await kv('put','take:'+d.take.id,d.take);S.clips.push(...d.clips);for(const id of d.replaced){const o=S.clips.find(c=>c.id===id);if(o)o.mute=true}S.selClip=d.clips[0].id;commit();showReview(S.clips.find(c=>c.id===S.selClip));msg('Take restored.')};
 // ---- app shell: tabs, pills, transport helpers ----
-const TABS=['studio','mixer','fx','beat','master','project'];
-function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('act',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='studio')draw();if(n==='master')renderCoach()}
+const TABS=['booth','beat','mix','master'];
+function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('active',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='booth'){draw();renderCoach()}}
 for(const t of TABS)$('nav-'+t).onclick=()=>showTab(t);
 function renderPills(){const el=$('pills');el.innerHTML='';TN.forEach((n,k)=>{const b=document.createElement('button'),on=+$('rtrack').value===k;b.className='pill'+(on?' act':'');b.textContent=n;b.style.borderColor=TC[k];b.style.background=on?TC[k]:'';b.onclick=()=>{$('rtrack').value=k;localStorage.bms_rtrack=k;renderPills()};el.append(b)})}
 $('rewind').onclick=()=>{if(S.rec)return;stopAll();S.cur=0;draw()};
@@ -465,7 +467,7 @@ $('play').onclick=((f)=>async function(){$('play').classList.add('on');try{await
 $('bpm').addEventListener('input',()=>draw());
 $('fxchip').onclick=()=>{S.fx.on=!S.fx.on;saveFx();renderFx();draw();msg('Vocal effects '+(S.fx.on?'ON: you hear the processed vocal.':'OFF: you hear your raw recording.'))};
 $('bpmchip').onclick=()=>{const v=parseInt(prompt('Tempo (BPM)',$('bpm').value),10);if(v>=40&&v<=240){$('bpm').value=v;localStorage.bms_bpm=v;draw()}};
-renderFx();renderPills();showTab(localStorage.bms_tab&&TABS.includes(localStorage.bms_tab)?localStorage.bms_tab:'studio');
+renderFx();renderPills();showTab(localStorage.bms_tab&&TABS.includes(localStorage.bms_tab)?localStorage.bms_tab:'booth');
 window.__bmsReady=1;window.__bms=S;
 // ---- restore ----
 try{const all=await kv('all');let list=null;

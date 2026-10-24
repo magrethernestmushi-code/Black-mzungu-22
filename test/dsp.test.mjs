@@ -159,3 +159,20 @@ test('beat maker: exact length, sound lands on the beat, not clipped, repeatable
   assert.deepEqual(a.L, b.L);
   const s = renderBeat({ pattern: g.p, bpm: 100, song: true, sr }); assert.ok(Math.abs(s.dur - 20 * 16 * 0.15) < 0.01, 'song ' + s.dur);
 });
+import { ROWS, GROUPS } from '../beat.js';
+test('24-bit WAV round-trips with the right header', () => {
+  const x = tone(440, 0.5, 1), ab = wavEncode([x, x], sr, 24), v = validateWav(ab);
+  assert.deepEqual([v.ok, v.ch, v.sr, v.bits, v.frames], [true, 2, sr, 24, sr]);
+  const dv = new DataView(ab); let m = 0;
+  for (let i = 0; i < 2000; i++) { const o = 44 + i * 6; let s = dv.getUint8(o) | (dv.getUint8(o + 1) << 8) | (dv.getUint8(o + 2) << 16); if (s & 0x800000) s -= 0x1000000; m = Math.max(m, Math.abs(s) / 0x800000); }
+  assert.ok(Math.abs(m - 0.5) < 0.01, 'peak ' + m);
+});
+test('Apple Music target exists at about -16 LUFS', () => { assert.equal(TARGETS.apple.lufs, -16); });
+test('beat maker: guitar and 808 make real sound; instrument filter works', () => {
+  const rms = v => Math.sqrt(v.reduce((t, q) => t + q * q, 0) / v.length);
+  for (const g of ['afrornb', 'trapguitar', 'singeli', 'amapianolog']) assert.ok(GENRES[g], g);
+  const p = GENRES.afrornb.p, only = r => renderBeat({ pattern: p, bpm: 98, bars: 2, sr, rows: r });
+  assert.ok(rms(only(GROUPS.guitar).L) > 0.01, 'guitar'); assert.ok(rms(only(GROUPS.bass808).L) > 0.01, '808');
+  assert.equal(rms(only([]).L), 0);
+  assert.ok(rms(only(ROWS).L) > rms(only(GROUPS.guitar).L));
+});

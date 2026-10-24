@@ -11,18 +11,18 @@ export function analyse(x) {
   const rms = Math.sqrt(sum / (x.length || 1));
   return { peak: pk, peakDb: db(pk), rmsDb: db(rms), clipped: clip, silent: pk < 1e-4 };
 }
-export function wavEncode(chs, sr) {
-  const ch = chs.length, n = chs[0].length;
-  const dv = new DataView(new ArrayBuffer(44 + n * ch * 2));
-  const str = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-  str(0, 'RIFF'); dv.setUint32(4, 36 + n * ch * 2, true); str(8, 'WAVE'); str(12, 'fmt ');
+export function wavEncode(chs, sr, bits = 16) {
+  const ch = chs.length, n = chs[0].length, bps = bits / 8, dv = new DataView(new ArrayBuffer(44 + n * ch * bps));
+  const str = (o, t) => { for (let i = 0; i < t.length; i++) dv.setUint8(o + i, t.charCodeAt(i)); };
+  str(0, 'RIFF'); dv.setUint32(4, 36 + n * ch * bps, true); str(8, 'WAVE'); str(12, 'fmt ');
   dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
-  dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * 2, true); dv.setUint16(32, ch * 2, true);
-  dv.setUint16(34, 16, true); str(36, 'data'); dv.setUint32(40, n * ch * 2, true);
+  dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps, true); dv.setUint16(32, ch * bps, true);
+  dv.setUint16(34, bits, true); str(36, 'data'); dv.setUint32(40, n * ch * bps, true);
   let o = 44;
   for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) {
-    const s = Math.max(-1, Math.min(1, chs[c][i]));
-    dv.setInt16(o, Math.round(s < 0 ? s * 0x8000 : s * 0x7fff), true); o += 2;
+    const x = Math.max(-1, Math.min(1, chs[c][i]));
+    if (bits === 24) { const v = Math.round(x < 0 ? x * 0x800000 : x * 0x7fffff); dv.setUint8(o, v & 255); dv.setUint8(o + 1, (v >> 8) & 255); dv.setUint8(o + 2, (v >> 16) & 255); o += 3; }
+    else { dv.setInt16(o, Math.round(x < 0 ? x * 0x8000 : x * 0x7fff), true); o += 2; }
   }
   return dv.buffer;
 }
@@ -156,7 +156,7 @@ export function stereoStats(L, R) {
   for (let i = 0; i < L.length; i++) { const m = (L[i] + R[i]) / 2, s = (L[i] - R[i]) / 2; ll += L[i] * L[i]; rr += R[i] * R[i]; lr += L[i] * R[i]; mm += m * m; ss += s * s; }
   return { corr: lr / Math.sqrt(ll * rr + 1e-20), monoDropDb: 10 * Math.log10((mm + 1e-20) / ((ll + rr) / 2 + 1e-20)), widthDb: 10 * Math.log10((ss + 1e-20) / (mm + 1e-20)) };
 }
-export const TARGETS = { streaming: { lufs: -14, tp: -1 }, download: { lufs: -10, tp: -1 }, live: { lufs: -9, tp: -1 } };
+export const TARGETS = { apple: { lufs: -16, tp: -1 }, streaming: { lufs: -14, tp: -1 }, download: { lufs: -10, tp: -1 }, live: { lufs: -9, tp: -1 } };
 export function master(chs, sr, target, maxGr = 5) {
   const before = kLoudness(chs, sr); let gdb = target.lufs - before.integrated, res = null;
   for (let it = 0; it < 12; it++) {
