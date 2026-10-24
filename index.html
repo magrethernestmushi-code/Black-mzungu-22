@@ -34,7 +34,7 @@ canvas{width:100%;display:block;border-radius:12px;background:#0c0c11}
 #dl a{display:block;background:var(--ok);color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none}
 nav{position:fixed;left:0;right:0;bottom:0;z-index:45;display:flex;background:#0e0e13f2;border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(10px)}
 nav button{flex:1;border:0;border-radius:0;background:transparent;min-height:58px;padding:6px 0;margin:0;font-size:11px;color:var(--mut);width:auto}nav button b{display:block;font-size:20px;font-weight:400}nav button.act{color:var(--acc)}
-summary{padding:6px 0;color:var(--acc)}label{display:block}
+summary{padding:6px 0;color:var(--acc)}audio{width:100%;margin:4px 0}textarea{width:100%;min-height:200px;background:var(--p2);color:var(--tx);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:18px;line-height:1.6;font-family:inherit;resize:vertical}label{display:block}
 </style></head><body>
 <div id="errbar"></div>
 <header class="top">
@@ -47,6 +47,7 @@ summary{padding:6px 0;color:var(--acc)}label{display:block}
  <div class="card" style="padding:8px"><canvas id="wave" width="900" height="340"></canvas><div id="cur" class="mut" style="font-size:12px;margin-top:6px">Tap the timeline to move the playhead. Tap a clip to select it.</div></div>
  <div class="card"><h2>Record to track</h2><div class="pills" id="pills"></div><select id="rtrack" hidden><option value="0">Lead</option><option value="1">Double</option><option value="2">Harmony</option><option value="3">Ad-lib</option></select>
   <small>Press ● at the top. Recording starts at the playhead, after the count-in. Use headphones.</small></div>
+ <div class="card"><h2>Maneno (lyrics)</h2><textarea id="lyr" placeholder="Andika au bandika maneno ya wimbo wako hapa. Yanahifadhiwa kwenye simu hii."></textarea></div>
  <div class="card"><h2>Clips</h2><div id="clips"><span class="mut">No clips yet</span></div><button id="undo">↶ Undo last edit</button></div>
  <div class="card"><h2>Recording setup</h2>
   <div class="row"><label>BPM<input id="bpm" type="number" min="40" max="240" value="90" style="width:100%;padding:12px;font-size:16px"></label><label>Count-in<select id="cin"><option value="0">Off</option><option value="1" selected>1 bar</option><option value="2">2 bars</option></select></label></div>
@@ -88,6 +89,11 @@ summary{padding:6px 0;color:var(--acc)}label{display:block}
 </section>
 
 <section class="tab" id="tab-master">
+ <div class="card"><h2>Hatua zako</h2><div id="coachlist"></div></div>
+ <div class="card"><h2>🎯 Producer wa kiotomatiki</h2><small>Bonyeza kitufe kimoja: studio inapima sauti yako, inaitengeneza (EQ, compressor, reverb), inaweka sauti na beat sawa, kisha inaimaster. Ni hesabu halisi za sauti, si AI ya maneno. Mipangilio ni ya kuanzia: sikiliza Kabla na Baada, kisha urekebishe ukipenda kwenye Vocal FX.</small>
+  <label style="margin-top:8px">Aina ya wimbo<select id="pstyle"><option value="bongo">Bongo Flava / Afro</option><option value="pop">Pop safi</option><option value="dryrap">Rap kavu</option><option value="natural">Asili (kidogo effect)</option></select></label>
+  <label>Unapeleka wapi<select id="ptarget"><option value="streaming">Streaming (Spotify, YouTube, Boomplay)</option><option value="download">Kupakua / DJ</option><option value="live">Live / PA</option></select></label>
+  <button id="autoprod" class="p">🎯 Tengeneza wimbo wangu</button><div id="prodlog"></div><div id="prodout"></div><button id="produndo">↶ Rudisha mipangilio ya awali</button></div>
  <div class="card"><h2>Mix Assistant</h2><small>Measures your beat, vocal and mix, and labels what is measured versus a taste suggestion. Nothing changes until you tap Apply.</small>
   <button id="mixchk" class="p">Check my mix</button><div id="mixrep"></div><button id="mixundo">↶ Undo applied suggestions</button></div>
  <div class="card"><h2>Master</h2><label>Target<select id="target"><option value="streaming">Streaming (about −14 LUFS)</option><option value="download">Download / DJ (about −10 LUFS)</option><option value="live">Live PA (about −9 LUFS)</option></select></label>
@@ -102,7 +108,7 @@ summary{padding:6px 0;color:var(--acc)}label{display:block}
 </section>
 </main>
 <div id="status">Ready.</div>
-<nav><button id="nav-studio"><b>🎚</b>Studio</button><button id="nav-mixer"><b>🎛</b>Mixer</button><button id="nav-fx"><b>✨</b>Vocal FX</button><button id="nav-beat"><b>🥁</b>Beat</button><button id="nav-master"><b>🔊</b>Master</button><button id="nav-project"><b>📁</b>Project</button></nav>
+<nav><button id="nav-studio"><b>🎚</b>Studio</button><button id="nav-mixer"><b>🎛</b>Mixer</button><button id="nav-fx"><b>✨</b>Vocal FX</button><button id="nav-beat"><b>🥁</b>Beat</button><button id="nav-master"><b>🎯</b>Producer</button><button id="nav-project"><b>📁</b>Project</button></nav>
 <script>
 (function(){var b=document.getElementById('errbar');function s(m){b.style.display='block';b.textContent='⚠ '+m}
 addEventListener('error',function(e){s(e.message||'Error')});addEventListener('unhandledrejection',function(e){s((e.reason&&e.reason.message)||String(e.reason))});
@@ -110,7 +116,7 @@ setTimeout(function(){if(!window.__bmsReady)s('The studio did not start. Pull do
 </script>
 <script src="lame.min.js"></script>
 <script type="module">
-import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio,pitchCorrect,PRESETS,packProject,unpackProject} from './dsp.js';
+import {analyse,wavEncode,validateWav,fmtTime,clipEnd,splitClip,trimStart,trimEnd,moveClip,analyseVocal,decide,STYLES,kLoudness,truePeakDb,stereoStats,mixAdvice,master,TARGETS,gateAudio,pitchCorrect,PRESETS,packProject,unpackProject,limiter} from './dsp.js';
 import {renderBeat,GENRES,ROWS} from './beat.js';
 const $=id=>document.getElementById(id);
 const S={ctx:null,beat:null,takes:[],clips:[],selClip:null,cur:0,from:0,hist:[],live:[],t0:0,raf:0,rec:false,mic:null,node:null,micSrc:null,chunks:[],peaks:null,recFrom:0};
@@ -334,7 +340,7 @@ function pack(chs,sr,base){const f=$('fmt').value;
  if(!window.lamejs)return null;const kb=+f,ab=mp3Enc(chs,sr,kb),u=new Uint8Array(ab),expect=kb*125*(chs[0].length/sr);
  return u[0]===0xFF&&(u[1]&0xE0)===0xE0&&ab.byteLength>expect*0.85&&ab.byteLength<expect*1.15+4000?{ab,name:base+'.mp3',mime:'audio/mpeg',info:kb+' kbps MP3'}:null}
 // backup / restore
-$('bk').onclick=()=>{try{if(!S.beat&&!S.takes.length)return msg('Nothing to back up yet.',1);const blobs=[],meta={app:'BMS',v:1,beat:S.beat?{name:S.beat.name}:null,takes:S.takes.map(t=>({id:t.id,name:t.name,sr:t.sr})),clips:S.clips,fx:S.fx,tracks:S.tracks,bpm:$('bpm').value,lat:$('lat').value,bg:$('bg').value,vg:$('vg').value,dip:S.dip};
+$('bk').onclick=()=>{try{if(!S.beat&&!S.takes.length)return msg('Nothing to back up yet.',1);const blobs=[],meta={app:'BMS',v:1,beat:S.beat?{name:S.beat.name}:null,takes:S.takes.map(t=>({id:t.id,name:t.name,sr:t.sr})),clips:S.clips,fx:S.fx,tracks:S.tracks,lyr:$('lyr').value,bpm:$('bpm').value,lat:$('lat').value,bg:$('bg').value,vg:$('vg').value,dip:S.dip};
  if(S.beat)blobs.push(S.beat.data);for(const t of S.takes)blobs.push(t.data.buffer.slice(t.data.byteOffset,t.data.byteOffset+t.data.byteLength));
  const ab=packProject(meta,blobs);offer(ab,'black-mzungu-backup-'+new Date().toISOString().slice(0,10)+'.bms','application/octet-stream');msg(`Backup ready (${(ab.byteLength/1048576).toFixed(1)} MB). Tap the green link and save it to Files. Keep a copy somewhere safe.`)}catch(e){msg('Backup failed: '+(e.message||e),1)}};
 $('rs').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;try{const p=unpackProject(await f.arrayBuffer());if(!p||p.meta.app!=='BMS')return msg('That is not a BLACK MZUNGU STUDIO backup file.',1);
@@ -342,7 +348,7 @@ $('rs').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)ret
  for(const t of S.takes)await kv('del','take:'+t.id);let bi=0;S.beat=null;S.peaks=null;
  if(p.meta.beat){const data=p.blobs[bi++];S.beat={name:p.meta.beat.name,data,audio:await dec(data)};S.peaks=peaksOf(S.beat.audio);await kv('put','beat',{kind:'beat',name:S.beat.name,data})}else await kv('del','beat');
  S.takes=[];for(const m of p.meta.takes){const t={kind:'take',id:m.id,name:m.name,sr:m.sr,data:new Float32Array(p.blobs[bi++])};S.takes.push(t);await kv('put','take:'+t.id,t)}
- S.clips=p.meta.clips||[];if(Array.isArray(p.meta.tracks)&&p.meta.tracks.length===4){S.tracks=p.meta.tracks;saveTr();renderTracks()}await saveClips();Object.assign(S.fx,p.meta.fx||{});saveFx();for(const [id,v] of [['bpm',p.meta.bpm],['lat',p.meta.lat],['bg',p.meta.bg],['vg',p.meta.vg]])if(v!=null){$(id).value=v;localStorage['bms_'+id]=v}
+ S.clips=p.meta.clips||[];if(p.meta.lyr!=null){$('lyr').value=p.meta.lyr;localStorage.bms_lyr=p.meta.lyr}if(Array.isArray(p.meta.tracks)&&p.meta.tracks.length===4){S.tracks=p.meta.tracks;saveTr();renderTracks()}await saveClips();Object.assign(S.fx,p.meta.fx||{});saveFx();for(const [id,v] of [['bpm',p.meta.bpm],['lat',p.meta.lat],['bg',p.meta.bg],['vg',p.meta.vg]])if(v!=null){$(id).value=v;localStorage['bms_'+id]=v}
  S.dip=p.meta.dip||0;localStorage.bms_dip=S.dip;for(const [id,u] of [['lat','latv'],['bg','bgv'],['vg','vgv']])$(u).textContent=$(id).value;S.selClip=S.clips[0]?S.clips[0].id:null;
  $('beatname').textContent=S.beat?S.beat.name+' · '+fmtTime(S.beat.audio.duration):'No beat loaded';renderFx();renderAll();msg('Backup restored.')}catch(err){msg('Restore failed: '+(err.message||err),1)}};
 // ---- tracks ----
@@ -372,9 +378,41 @@ async function render(o,name,label){try{if(!(o.beat&&S.beat)&&!S.clips.some(c=>!
 $('expmix').onclick=()=>render({beat:1,vocal:1},'black-mzungu-mix','Mix');
 $('expvox').onclick=()=>render({beat:0,vocal:1,fx:false},'black-mzungu-vocal-stem-dry','Dry vocal stem');
 $('expfx').onclick=()=>render({beat:0,vocal:1,fx:true},'black-mzungu-vocal-stem-processed','Processed vocal stem');
+// ---- Producer: guided + one-tap ----
+$('lyr').value=localStorage.bms_lyr||'';$('lyr').oninput=()=>{localStorage.bms_lyr=$('lyr').value};
+function renderCoach(){const hasV=S.clips.some(c=>!c.mute),items=[[!!S.beat,'Beat: ingiza au tengeneza (tab ya Beat)'],[hasV,'Rekodi sauti yako (kitufe chekundu ● juu)'],[hasV&&!!S.beat,'Bonyeza ▶ ujisikilize. Kama sauti haikai sawa na beat, rekebisha “Latency” kwenye Studio'],[!!S.fxPrev,'Bonyeza “Tengeneza wimbo wangu” hapa chini'],[!!$('dl').querySelector('a'),'Pakua wimbo wako (kiungo cha kijani)']];let nxt=false;
+ $('coachlist').innerHTML=items.map(([ok,t])=>{const cur=!ok&&!nxt;if(!ok)nxt=true;return `<div class="take" style="${cur?'border-color:#e8b84a':''}"><span>${ok?'✅':cur?'➡️':'⚪'}</span><div class="i">${t}</div></div>`}).join('')}
+function clipsAnalysis(){const segs=[];let sr=0;for(const cl of S.clips){const T=S.tracks[cl.track||0];if(cl.mute||T.mute)continue;const t=S.takes.find(x=>x.id===cl.takeId);if(!t)continue;if(!sr)sr=t.sr;if(t.sr!==sr)continue;segs.push(t.data.subarray(Math.round(cl.off*sr),Math.round((cl.off+cl.dur)*sr)))}
+ if(!segs.length)return null;const n=segs.reduce((a,s)=>a+s.length,0),x=new Float32Array(n);let o=0;for(const s of segs){x.set(s,o);o+=s.length}return{a:analyseVocal(x,sr),sr}}
+async function measureMix(style){const B=await renderRaw({beat:1,vocal:0}),V=await renderRaw({beat:0,vocal:1,fx:true}),M=await renderRaw({beat:1,vocal:1,fx:true}),sr=B.sr,bs=analyseVocal(monoOf(B.ch),sr),vs=analyseVocal(monoOf(V.ch),sr);if(vs.silent||bs.silent)return null;
+ const ml=kLoudness(M.ch,sr),m={beatLufs:kLoudness(B.ch,sr).integrated,voxLufs:kLoudness(V.ch,sr).integrated,beatPres:bs.presAbsDb,voxPres:vs.presAbsDb,beatLowPct:bs.lowPct,...stereoStats(M.ch[0],M.ch[1]),tpDb:Math.max(truePeakDb(M.ch[0],sr),truePeakDb(M.ch[1],sr)),mixLufs:ml.integrated,shortMax:ml.shortMax};return{m,adv:mixAdvice(m,style)}}
+$('autoprod').onclick=async()=>{const log=$('prodlog'),T=TARGETS[$('ptarget').value],style=$('pstyle').value,L=t=>{log.insertAdjacentHTML('beforeend',`<div class="take" style="display:block">${t}</div>`);msg(t.replace(/<[^>]+>/g,''))};
+ try{if(!S.beat||!S.clips.some(c=>!c.mute))return msg('Weka beat (tab ya Beat) na urekodi sauti kwanza (kitufe chekundu ●).',1);
+  if(S.rec)return msg('Acha kurekodi kwanza.',1);stopAll();log.innerHTML='';$('prodout').innerHTML='';$('autoprod').disabled=true;L('⏳ Naanza. Subiri kidogo na usifunge skrini hii.');await wait();
+  const before=await renderRaw({beat:1,vocal:1,fx:false}),ca=clipsAnalysis();if(!ca||ca.a.silent){log.innerHTML='';return msg('Sauti ni kimya au ndogo sana. Angalia mic na urekodi tena.',1)}const a=ca.a;
+  L(`🎤 Nimepima sauti yako: kiwango cha juu ${a.peakDb.toFixed(1)} dBFS, tofauti ya sauti kubwa na ndogo ${a.dynRangeDb.toFixed(0)} dB.`);
+  if(a.clipped)L(`⚠ Sauti imekatika (clipping) mara ${a.clipped}. Haiwezi kurekebishwa: rekodi tena ukiwa mbali kidogo na mic.`);
+  if(a.snrDb<20)L('⚠ Kuna kelele ya background. Rekodi sehemu tulivu zaidi, ndipo wimbo utakuwa safi.');
+  await wait();const {p,notes}=decide(a,style);S.fxPrev=JSON.parse(JSON.stringify(S.fx));S.mixPrev={vg:$('vg').value,dip:S.dip};const {gateOn,...pp}=p;Object.assign(S.fx,pp,{style,on:true});S.fx.en.gate=gateOn?1:0;saveFx();$('style').value=style;renderFx();
+  L(`✅ Sauti nzito isiyohitajika (rumble) imekatwa chini ya ${p.hpf} Hz${p.mud?` na sauti ya “mawingu” imepunguzwa ${p.mud} dB`:''}.`);
+  L(`✅ Sauti imetulizwa na compressor (${p.ratio}:1) ili isipande na kushuka ovyo.`);
+  if(p.sib)L(`✅ Sauti kali ya “S” imepunguzwa ${p.sib} dB.`);if(p.pres)L(p.pres>0?`✅ Maneno yamefanywa yaonekane zaidi (+${p.pres} dB).`:`✅ Ukali wa sauti umepunguzwa (${p.pres} dB).`);
+  if(gateOn)L('✅ Gate imewekwa kupunguza kelele wakati hujaimba.');L(`✅ Reverb ${Math.round(p.rev*100)}% na delay ${Math.round(p.dly*100)}% (ladha ya aina uliyochagua).`);
+  L('⏳ Naweka sauti yako na beat sawa…');await wait();const mm=await measureMix(style);let vgA=0,dipA=0;
+  if(mm){for(const [k,t,ap] of mm.adv){if(ap&&ap.vg!=null){vgA=ap.vg;const v=Math.max(-24,Math.min(12,+$('vg').value+ap.vg));$('vg').value=v;$('vgv').textContent=v;localStorage.bms_vg=v}if(ap&&ap.dip!=null){dipA=ap.dip;S.dip=ap.dip;localStorage.bms_dip=S.dip}}
+   L(vgA?`✅ Sauti yako imekuwa ${vgA>0?'juu':'chini'} ${Math.abs(vgA).toFixed(1)} dB ili ikae vizuri juu ya beat.`:'✅ Sauti yako na beat vimekaa sawa tayari.');if(dipA)L(`✅ Beat imeshushwa ${dipA} dB sehemu ambayo maneno huzibwa, ili uimbaji wako usikike.`);
+   if(mm.m.beatLowPct>50)L('⚠ Beat ina bass nzito sana. Sikiliza kwenye simu: bass nzito haisikiki kwenye simu na earphones ndogo.');if(mm.m.monoDropDb<-6)L('⚠ Wimbo unapoteza nguvu ukichezwa mono (spika moja). Punguza Spatial preview au pan kali.')}
+  L('⏳ Namaliza (mastering)…');await wait();const R=await renderRaw({beat:1,vocal:1,fx:true});await wait();const res=master(R.ch,R.sr,T),pk=pack(res.chs,R.sr,'black-mzungu-final');if(!pk)return msg('Kuhamisha faili kumeshindwa. Jaribu tena.',1);
+  const sr=R.sr,bl=kLoudness(before.ch,sr).integrated,bc=before.ch.map(c=>{const g=Math.pow(10,(res.after.integrated-bl)/20),o=new Float32Array(c.length);for(let i=0;i<c.length;i++)o[i]=c[i]*g;return o});limiter(bc,sr,-1);
+  const u=ab=>URL.createObjectURL(new Blob([ab],{type:'audio/wav'})),afterWav=pk.mime==='audio/wav'?pk.ab:wavEncode(res.chs,sr);
+  L(`✅ Wimbo umefikishwa ${res.after.integrated.toFixed(1)} LUFS (lengo ${T.lufs}) bila kuharibu sauti${res.reached?'':'. Haukufikia kabisa kwa sababu kupanda zaidi kungebana sauti vibaya'}.`);
+  $('prodout').innerHTML=`<h2 style="margin-top:12px">Sikiliza tofauti (nguvu ya sauti imewekwa sawa)</h2><div>Kabla (bila marekebisho):</div><audio controls src="${u(wavEncode(bc,sr))}"></audio><div>Baada (imetengenezwa):</div><audio controls src="${u(afterWav)}"></audio><div id="dl2"><a style="display:block;background:#37d67a;color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none" href="${u(pk.ab)}" download="${pk.name}">⬇ Pakua wimbo wako (${pk.info})</a></div><small>Hii ni mipangilio ya kuanzia. Kama hupendi, bonyeza “Rudisha mipangilio ya awali” au rekebisha kwenye Vocal FX na Mixer.</small>`;
+  $('dl').innerHTML=`<a href="${u(pk.ab)}" download="${pk.name}">⬇ ${pk.name}</a>`;renderCoach();msg('Imekamilika! Sikiliza Kabla na Baada hapo chini, kisha upakue wimbo wako.')}
+ catch(e){msg('Imeshindwa: '+(e.message||e),1)}finally{$('autoprod').disabled=false;renderCoach()}};
+$('produndo').onclick=()=>{if(!S.fxPrev&&!S.mixPrev)return msg('Hakuna cha kurudisha.',1);if(S.fxPrev){S.fx=S.fxPrev;S.fxPrev=null;saveFx();renderFx()}if(S.mixPrev){$('vg').value=S.mixPrev.vg;$('vgv').textContent=S.mixPrev.vg;localStorage.bms_vg=S.mixPrev.vg;S.dip=S.mixPrev.dip;localStorage.bms_dip=S.dip;S.mixPrev=null}msg('Mipangilio ya awali imerudishwa.');renderCoach()};
 // ---- app shell: tabs, pills, transport helpers ----
 const TABS=['studio','mixer','fx','beat','master','project'];
-function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('act',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='studio')draw()}
+function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('act',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='studio')draw();if(n==='master')renderCoach()}
 for(const t of TABS)$('nav-'+t).onclick=()=>showTab(t);
 function renderPills(){const el=$('pills');el.innerHTML='';TN.forEach((n,k)=>{const b=document.createElement('button'),on=+$('rtrack').value===k;b.className='pill'+(on?' act':'');b.textContent=n;b.style.borderColor=TC[k];b.style.background=on?TC[k]:'';b.onclick=()=>{$('rtrack').value=k;localStorage.bms_rtrack=k;renderPills()};el.append(b)})}
 $('rewind').onclick=()=>{if(S.rec)return;stopAll();S.cur=0;draw()};

@@ -36,12 +36,21 @@ await p.screenshot({path:'/tmp/shot_fx.png'});
 const lame=new Function(fs.readFileSync('/home/claude/bms/lame.min.js','utf8')+';return lamejs')();const sr=44100,n=sr*3,pcm=new Int16Array(n);for(let i=0;i<n;i++)pcm[i]=Math.round(9000*Math.sin(2*Math.PI*220*i/sr));
 const enc=new lame.Mp3Encoder(1,sr,128),parts=[];for(let i=0;i<n;i+=1152){const bb=enc.encodeBuffer(pcm.subarray(i,i+1152));if(bb.length)parts.push(Buffer.from(bb))}parts.push(Buffer.from(enc.flush()));fs.writeFileSync('/tmp/test beat.mp3',Buffer.concat(parts));
 await tab('beat');const inp=await p.$('#file');await inp.uploadFile('/tmp/test beat.mp3');s=await waitStatus(/Beat loaded|Could not read/);ok('mp3 import',/Beat loaded/.test(s),s);
+// 7b producer one-tap
+await tab('master');await p.evaluate(()=>{document.getElementById('ptarget').value='streaming'});await click('autoprod');s=await waitStatus(/Imekamilika|Imeshindwa|Weka beat|kimya/,150000);ok('auto produce completes',/Imekamilika/.test(s),s);
+const po=await p.evaluate(()=>({audios:[...document.querySelectorAll('#prodout audio')].map(a=>a.src.startsWith('blob:')),link:!!document.querySelector('#dl2 a'),log:document.querySelectorAll('#prodlog .take').length,fxPrev:!!window.__bms.fxPrev,coach:document.getElementById('coachlist').textContent.includes('✅')}));
+ok('before/after players + download + report',po.audios.length===2&&po.audios.every(Boolean)&&po.link&&po.log>=6&&po.fxPrev&&po.coach,JSON.stringify(po));
+const pb=await p.evaluate(async()=>{const as=[...document.querySelectorAll('#prodout audio')];const out=[];for(const a of as){const buf=await (await fetch(a.src)).arrayBuffer();const d=await new OfflineAudioContext(2,1,44100).decodeAudioData(buf);const L=d.getChannelData(0);let pk=0;for(let i=0;i<L.length;i++)pk=Math.max(pk,Math.abs(L[i]));out.push({dur:+d.duration.toFixed(1),peak:+pk.toFixed(2)})}return out});
+ok('produced audio is real and not clipped',pb.length===2&&pb.every(x=>x.peak>0.05&&x.peak<=1.0&&x.dur>2),JSON.stringify(pb));
+await p.screenshot({path:'/tmp/shot_producer.png',fullPage:false});
+await click('produndo');ok('producer undo',/rudishwa/.test(await status()),await status());
+await tab('studio');await p.evaluate(()=>{const l=document.getElementById('lyr');l.value='Mistari yangu ya kwanza';l.dispatchEvent(new Event('input'))});
 // 8 track mixer + mute/solo UI + master + backup
 await tab('mixer');const tr=await p.evaluate(()=>document.querySelectorAll('#tracks .take').length);ok('4 tracks shown',tr===4);await p.screenshot({path:'/tmp/shot_mixer.png'});
 await tab('master');await click('mixchk');s=await waitStatus(/Mix check done|failed|needs/i,60000);ok('mix assistant',/Mix check done/.test(s),s);
 await click('expmast');s=await waitStatus(/Master ready|failed|silence/i,90000);ok('master export',/Master ready/.test(s),s);
 await tab('project');await p.evaluate(()=>{document.getElementById('dl').innerHTML=''});await click('bk');s=await waitStatus(/Backup ready|failed|Nothing/);ok('backup',/Backup ready/.test(s),s);
 // 9 persistence across reload
-await p.reload({waitUntil:'load'});await sleep(2000);const rs=await p.evaluate(()=>({takes:window.__bms.takes.length,clips:window.__bms.clips.length,beat:!!window.__bms.beat}));ok('data survives reload',rs.takes===1&&rs.clips===1&&rs.beat,JSON.stringify(rs));
+await p.reload({waitUntil:'load'});await sleep(2000);const rs=await p.evaluate(()=>({takes:window.__bms.takes.length,clips:window.__bms.clips.length,beat:!!window.__bms.beat}));const ly=await p.evaluate(()=>document.getElementById('lyr').value);ok('data and lyrics survive reload',rs.takes===1&&rs.clips===1&&rs.beat&&ly==='Mistari yangu ya kwanza',JSON.stringify(rs)+ly);
 ok('no console errors overall',errs.length===0,errs.join('|'));
 console.log(res.join('\n'));await b.close();srv.close();
