@@ -9,6 +9,13 @@ const waitStatus=async(re,ms=20000)=>{const t=Date.now();while(Date.now()-t<ms){
 await p.goto('http://localhost:8124/',{waitUntil:'load'});await sleep(1500);
 ok('page ready, no errors',await p.evaluate(()=>window.__bmsReady===1)&&errs.length===0,errs.join('|'));
 await p.screenshot({path:'/tmp/shot_studio.png'});
+{const box=await p.evaluate(()=>{const r=document.getElementById('wave').getBoundingClientRect();return{x:r.x,y:r.y}});
+ await p.mouse.click(box.x+40,box.y+22+56+2*58+10);await sleep(200);ok('tap track name arms it',(await p.evaluate(()=>document.getElementById('rtrack').value))==='2');
+ await p.mouse.click(box.x+46,box.y+22+56+0*58+40);await sleep(200);ok('tap M mutes track',(await p.evaluate(()=>window.__bms.tracks[0].mute))===1);
+ await p.mouse.click(box.x+46,box.y+22+56+0*58+40);await sleep(200);ok('tap M again unmutes',(await p.evaluate(()=>window.__bms.tracks[0].mute))===0);
+ await p.mouse.click(box.x+74,box.y+22+56-30+12);await sleep(200);ok('tap beat M mutes beat',(await p.evaluate(()=>window.__bms.bm))===true);await p.mouse.click(box.x+74,box.y+22+56-30+12);
+ const w=await p.evaluate(()=>({warn:getComputedStyle(document.getElementById('micwarn')).display,mode:document.getElementById('micmode').value}));ok('mic default clean, no warning shown',w.warn==='none'&&w.mode==='clean',JSON.stringify(w));}
+
 // 1 beat maker
 await tab('beat');await click('mkbeat');let s=await waitStatus(/Beat ready|Could not/);ok('beat maker',/Beat ready/.test(s),s);
 await p.screenshot({path:'/tmp/shot_beat.png'});
