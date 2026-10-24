@@ -18,6 +18,17 @@ await click('rec');await sleep(3500);await click('rec');s=await waitStatus(/plac
 const info=await p.evaluate(()=>{const S=window.__bms,t=S.takes[0];let pk=0;if(t)for(const v of t.data)pk=Math.max(pk,Math.abs(v));return{takes:S.takes.length,clips:S.clips.length,track:S.clips[0]&&S.clips[0].track,peak:pk,secs:t?t.data.length/t.sr:0}});
 ok('take has real audio',info.takes===1&&info.clips===1&&info.track===1&&info.peak>0.001&&info.secs>2.5,JSON.stringify(info));
 await p.screenshot({path:'/tmp/shot_clip.png'});
+const st=()=>p.evaluate(()=>{const S=window.__bms;return{clips:S.clips.length,muted:S.clips.filter(c=>c.mute).length,takes:S.takes.length}});
+const rv=await p.evaluate(()=>({shown:document.getElementById('review').style.display==='block',txt:document.getElementById('rvinfo').textContent}));ok('take review appears after recording',rv.shown,rv.txt);
+await click('rvsolo');await sleep(800);const ls=await p.evaluate(()=>({live:window.__bms.live.length,st:window.__bms.ctx.state}));ok('listen: take only',ls.live>0&&ls.st==='running',JSON.stringify(ls));
+await sleep(4500);ok('listen auto-stops',(await p.evaluate(()=>window.__bms.live.length))===0);
+await click('rewind');await click('rec');await sleep(2500);await click('rec');s=await waitStatus(/placed/);const rt=await st();ok('re-take mutes the older take on the same track',rt.clips===2&&rt.muted===1&&rt.takes===2,JSON.stringify(rt));
+await click('rvmix');await sleep(800);ok('listen: with beat',(await p.evaluate(()=>window.__bms.live.length))>0);await click('stop');
+await click('rvdel');const dl=await st();ok('delete removes take and un-mutes the previous one',dl.clips===1&&dl.muted===0&&dl.takes===1,JSON.stringify(dl));
+await click('rvundo');await sleep(500);const un=await st();ok('undo delete restores it',un.clips===2&&un.muted===1&&un.takes===2,JSON.stringify(un));
+await click('rvdel');ok('deleted again, 1 clip left',(await st()).clips===1);
+await click('zin');await click('zin');await click('zin');ok('zoom in works',(await p.evaluate(()=>window.__bms.zoom))===8);await p.screenshot({path:'/tmp/shot_zoom.png'});await click('zfit');
+
 // 3 play
 await click('play');await sleep(1800);const pl=await p.evaluate(()=>({st:window.__bms.ctx.state,t:window.__bms.ctx.currentTime,live:window.__bms.live.length}));ok('playback running',pl.st==='running'&&pl.live>0,JSON.stringify(pl));await click('stop');
 // 4 export mix and analyse the real file
@@ -37,13 +48,13 @@ const lame=new Function(fs.readFileSync('/home/claude/bms/lame.min.js','utf8')+'
 const enc=new lame.Mp3Encoder(1,sr,128),parts=[];for(let i=0;i<n;i+=1152){const bb=enc.encodeBuffer(pcm.subarray(i,i+1152));if(bb.length)parts.push(Buffer.from(bb))}parts.push(Buffer.from(enc.flush()));fs.writeFileSync('/tmp/test beat.mp3',Buffer.concat(parts));
 await tab('beat');const inp=await p.$('#file');await inp.uploadFile('/tmp/test beat.mp3');s=await waitStatus(/Beat loaded|Could not read/);ok('mp3 import',/Beat loaded/.test(s),s);
 // 7b producer one-tap
-await tab('master');await p.evaluate(()=>{document.getElementById('ptarget').value='streaming'});await click('autoprod');s=await waitStatus(/Imekamilika|Imeshindwa|Weka beat|kimya/,150000);ok('auto produce completes',/Imekamilika/.test(s),s);
+await tab('master');await p.evaluate(()=>{document.getElementById('ptarget').value='streaming'});await click('autoprod');s=await waitStatus(/Done!|Failed|Add a beat|silent/,150000);ok('auto produce completes',/Done!/.test(s),s);
 const po=await p.evaluate(()=>({audios:[...document.querySelectorAll('#prodout audio')].map(a=>a.src.startsWith('blob:')),link:!!document.querySelector('#dl2 a'),log:document.querySelectorAll('#prodlog .take').length,fxPrev:!!window.__bms.fxPrev,coach:document.getElementById('coachlist').textContent.includes('✅')}));
 ok('before/after players + download + report',po.audios.length===2&&po.audios.every(Boolean)&&po.link&&po.log>=6&&po.fxPrev&&po.coach,JSON.stringify(po));
 const pb=await p.evaluate(async()=>{const as=[...document.querySelectorAll('#prodout audio')];const out=[];for(const a of as){const buf=await (await fetch(a.src)).arrayBuffer();const d=await new OfflineAudioContext(2,1,44100).decodeAudioData(buf);const L=d.getChannelData(0);let pk=0;for(let i=0;i<L.length;i++)pk=Math.max(pk,Math.abs(L[i]));out.push({dur:+d.duration.toFixed(1),peak:+pk.toFixed(2)})}return out});
 ok('produced audio is real and not clipped',pb.length===2&&pb.every(x=>x.peak>0.05&&x.peak<=1.0&&x.dur>2),JSON.stringify(pb));
 await p.screenshot({path:'/tmp/shot_producer.png',fullPage:false});
-await click('produndo');ok('producer undo',/rudishwa/.test(await status()),await status());
+await click('produndo');ok('producer undo',/restored/.test(await status()),await status());
 await tab('studio');await p.evaluate(()=>{const l=document.getElementById('lyr');l.value='Mistari yangu ya kwanza';l.dispatchEvent(new Event('input'))});
 // 8 track mixer + mute/solo UI + master + backup
 await tab('mixer');const tr=await p.evaluate(()=>document.querySelectorAll('#tracks .take').length);ok('4 tracks shown',tr===4);await p.screenshot({path:'/tmp/shot_mixer.png'});
