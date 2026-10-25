@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0a0a"><title>BLACK MZUNGU STUDIO V2</title>
+<meta name="theme-color" content="#0a0a0a"><title>BLACK MZUNGU STUDIO V3</title>
 <style>
 :root{--bg:#0a0a0a;--p1:#151515;--p2:#222;--line:#2b2b2b;--tx:#fff;--mut:#8b8b9c;--acc:#fff;--rec:#ff0033;--ok:#37d67a;--gold:#e8b84a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -85,6 +85,20 @@ textarea{width:100%;min-height:120px;background:#151515;color:#fff;border:1px so
   <div class="row"><label>Length<select id="bars"><option value="4">4 bars loop</option><option value="8">8 bars loop</option><option value="song">Full song (20 bars)</option></select></label><label>Swing<input id="swing" type="range" min="0" max="0.3" step="0.01" value="0.12"></label></div>
   <small>Tempo uses the BPM in BOOTH → Recording settings (or tap the BPM chip at the top).</small><div id="grid"></div>
   <button id="mkbeat" class="p">GENERATE BEAT</button></div>
+ <div class="card" id="aicard"><h2>AI music (ACE-Step)</h2>
+  <div id="aistatus" class="mut">Checking the AI server…</div>
+  <div id="aiform" style="display:none">
+   <label style="margin-top:8px">Describe the instrumental<textarea id="aiprompt" style="min-height:90px;font-size:16px" placeholder="Dark Afro RnB, 98 BPM, plucked guitar, warm 808 bass, sparse drums, late-night mood"></textarea></label>
+   <div class="row"><label>BPM (optional)<input id="aibpm" type="number" min="30" max="300" style="width:100%;padding:12px;font-size:16px"></label><label>Length (seconds)<input id="aidur" type="number" min="10" max="240" value="30" style="width:100%;padding:12px;font-size:16px"></label></div>
+   <label>Key (optional)<input id="aikey" type="text" placeholder="A minor" style="width:100%;padding:12px;font-size:16px;background:#222;color:#fff;border:1px solid #2b2b2b;border-radius:10px"></label>
+   <label><input type="checkbox" id="aiinst" checked> Instrumental only</label>
+   <div id="ailyrwrap" style="display:none"><label>Lyrics<textarea id="ailyr" style="min-height:100px;font-size:16px" placeholder="[Verse]&#10;..."></textarea></label></div>
+   <label style="margin-top:8px"><input type="checkbox" id="aiconsent"> <span id="aiconsenttxt"></span></label>
+   <button id="aigen" class="p">Generate with AI</button><button id="aicancel" style="display:none">Cancel</button>
+   <div id="aistat" class="mut" style="white-space:pre-line"></div><audio id="aiplay" controls style="display:none"></audio>
+   <div id="aiact" style="display:none"><button id="aiuse" class="p">Use as my beat</button><a id="aidl" class="btn" style="text-decoration:none">Download</a></div>
+  </div>
+  <details style="margin-top:8px"><summary>What works and what does not (feature status)</summary><div id="capslist"></div></details></div>
  <div class="card"><h2>Use your own beat</h2><label class="btn" for="file">Import beat (MP3 / WAV / M4A)</label><input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.aac,.ogg,.flac,.mp4" hidden><div id="beatname" class="mut">No beat loaded</div></div>
 </section>
 
@@ -435,9 +449,13 @@ $('autoprod').onclick=async()=>{const log=$('prodlog'),T=TARGETS[$('ptarget').va
    if(mm.m.beatLowPct>50)L('⚠ The beat is very bass-heavy. Check it on a phone: heavy bass is not reproduced by phone speakers or small earphones.');if(mm.m.monoDropDb<-6)L('⚠ The mix loses strength when played in mono. Reduce Spatial preview or extreme panning.')}
   L('⏳ Mastering…');await wait();const R=await renderRaw({beat:1,vocal:1,fx:true});await wait();const res=master(R.ch,R.sr,T),pk=pack(res.chs,R.sr,'black-mzungu-final');if(!pk)return msg('Export failed validation. Please try again.',1);
   const sr=R.sr,bl=kLoudness(before.ch,sr).integrated,bc=before.ch.map(c=>{const g=Math.pow(10,(res.after.integrated-bl)/20),o=new Float32Array(c.length);for(let i=0;i<c.length;i++)o[i]=c[i]*g;return o});limiter(bc,sr,-1);
+  L('⏳ Re-measuring the finished vocal…');await wait();const Vp=await renderRaw({beat:0,vocal:1,fx:true}),vp=analyseVocal(monoOf(Vp.ch),Vp.sr),f1=x=>isFinite(x)?x.toFixed(1):'n/a',issues=[];
+  if(vp.clipped>0)issues.push(`The processed vocal still contains ${vp.clipped} clipped samples.`);if(vp.sibDb>-10)issues.push('Strong 5-9 kHz energy remains, so harsh S sounds may still be audible.');if(a.snrDb<20)issues.push('Background noise remains (only a gate was applied; no AI denoising).');if(!res.reached)issues.push('The loudness target was not reached without heavier limiting.');if(mm&&mm.m.monoDropDb<-6)issues.push('The mix loses strength in mono.');if(mm&&mm.m.beatLowPct>50)issues.push('The beat is very bass-heavy for phone speakers.');
+  const rep=['# BLACK MZUNGU STUDIO engineering report','',`Date: ${new Date().toISOString()}`,`Style: ${style}. Target: ${$('ptarget').selectedOptions[0].text}.`,'','## Vocal (measured by this app)','| Measure | Original | After processing |','|---|---|---|',`| Peak (dBFS) | ${f1(a.peakDb)} | ${f1(vp.peakDb)} |`,`| Level (dB) | ${f1(a.rmsDb)} | ${f1(vp.rmsDb)} |`,`| Dynamic range (dB) | ${f1(a.dynRangeDb)} | ${f1(vp.dynRangeDb)} |`,`| Energy below 90 Hz (%) | ${f1(a.lowPct)} | ${f1(vp.lowPct)} |`,`| Mud index, 200-500 Hz vs mids (dB) | ${f1(a.mudDb)} | ${f1(vp.mudDb)} |`,`| Sibilance index, 5-9 kHz vs mids (dB) | ${f1(a.sibDb)} | ${f1(vp.sibDb)} |`,`| Clipped samples | ${a.clipped} | ${vp.clipped} |`,'','## Settings applied',`High-pass ${p.hpf} Hz; mud cut ${p.mud} dB; presence ${p.pres} dB; sibilance cut ${p.sib} dB (a static cut, not a true de-esser); compressor ${p.ratio}:1 at ${p.thr} dB with ${p.mk} dB makeup; noise gate ${gateOn?'on':'off'}; reverb ${Math.round(p.rev*100)}%; delay ${Math.round(p.dly*100)}%. Vocal level change ${vgA} dB. Beat dip ${dipA} dB at 3 kHz.`,'','## Mix and master',mm?`Vocal vs beat: ${(mm.m.voxLufs-mm.m.beatLufs).toFixed(1)} LU. Stereo correlation ${mm.m.corr.toFixed(2)}, mono loss ${Math.abs(mm.m.monoDropDb).toFixed(1)} dB.`:'Mix measurements unavailable.',`Master: ${f1(res.before.integrated)} to ${f1(res.after.integrated)} LUFS (target ${T.lufs}); gain ${f1(res.gainDb)} dB; limiter up to ${f1(res.maxGrDb)} dB; true peak ${f1(res.tpDb)} dBTP; file ${pk.info}.`,'','## Remaining issues',issues.length?issues.map(x=>'- '+x).join('\n'):'- None measured.','','## Limits','These numbers measure this render. They do not prove the song sounds professional. Check it on earphones, a phone speaker and a car or larger system. No AI denoising, source separation or true de-esser was used.'].join('\n');
+  const ru=URL.createObjectURL(new Blob([rep],{type:'text/markdown'}));if(issues.length)L('⚠ Remaining: '+issues.join(' '));
   const u=ab=>URL.createObjectURL(new Blob([ab],{type:'audio/wav'})),afterWav=pk.mime==='audio/wav'?pk.ab:wavEncode(res.chs,sr);
   L(`✅ Mastered to ${res.after.integrated.toFixed(1)} LUFS (target ${T.lufs}) without crushing the dynamics${res.reached?'':'. It stopped short of the target because going louder would have squashed the sound'}.`);
-  $('prodout').innerHTML=`<h2 style="margin-top:12px">Compare (matched loudness)</h2><div>Before (no processing):</div><audio controls src="${u(wavEncode(bc,sr))}"></audio><div>After (produced):</div><audio controls src="${u(afterWav)}"></audio><div id="dl2"><a style="display:block;background:#37d67a;color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none" href="${u(pk.ab)}" download="${pk.name}">⬇ Download your song (${pk.info})</a></div><small>These are starting points. If you do not like the result, tap “Restore my previous settings” or fine-tune in Vocal FX and Mixer.</small>`;
+  $('prodout').innerHTML=`<h2 style="margin-top:12px">Compare (matched loudness)</h2><div>Before (no processing):</div><audio controls src="${u(wavEncode(bc,sr))}"></audio><div>After (produced):</div><audio controls src="${u(afterWav)}"></audio><div id="dl2"><a style="display:block;background:#37d67a;color:#06210f;font-weight:700;text-align:center;padding:14px;border-radius:12px;margin-top:8px;text-decoration:none" href="${u(pk.ab)}" download="${pk.name}">⬇ Download your song (${pk.info})</a></div><a style="display:block;background:#222;color:#fff;border:1px solid #444;text-align:center;padding:12px;border-radius:12px;margin-top:8px;text-decoration:none" href="${ru}" download="engineering-report.md">⬇ Engineering report (measured before/after)</a><small>These are starting points. If you do not like the result, tap “Restore my previous settings” or fine-tune in Vocal FX and Mixer.</small>`;
   $('dl').innerHTML=`<a href="${u(pk.ab)}" download="${pk.name}">⬇ ${pk.name}</a>`;renderCoach();msg('Done! Compare Before and After below, then download your song.')}
  catch(e){msg('Failed: '+(e.message||e),1)}finally{$('autoprod').disabled=false;renderCoach()}};
 $('produndo').onclick=()=>{if(!S.fxPrev&&!S.mixPrev)return msg('Nothing to restore.',1);if(S.fxPrev){S.fx=S.fxPrev;S.fxPrev=null;saveFx();renderFx()}if(S.mixPrev){$('vg').value=S.mixPrev.vg;$('vgv').textContent=S.mixPrev.vg;localStorage.bms_vg=S.mixPrev.vg;S.dip=S.mixPrev.dip;localStorage.bms_dip=S.dip;S.mixPrev=null}msg('Previous settings restored.');renderCoach()};
@@ -455,6 +473,36 @@ $('rvdel').onclick=()=>{const cl=rvClip();if(!cl)return;stopAll();const t=S.take
  S.clips=S.clips.filter(c=>c.takeId!==cl.takeId);S.takes=S.takes.filter(x=>x.id!==cl.takeId);kv('del','take:'+cl.takeId);S.selClip=null;commit();
  $('rvinfo').innerHTML='<b>Take deleted.</b>';$('rvbtns').style.display='none';$('rvundo').style.display='block';msg('Take deleted. You can undo it right now.')};
 $('rvundo').onclick=async()=>{const d=S.lastDel;if(!d)return;S.lastDel=null;S.takes.push(d.take);await kv('put','take:'+d.take.id,d.take);S.clips.push(...d.clips);for(const id of d.replaced){const o=S.clips.find(c=>c.id===id);if(o)o.mute=true}S.selClip=d.clips[0].id;commit();showReview(S.clips.find(c=>c.id===S.selClip));msg('Take restored.')};
+// ---- AI music (v3): talks to the optional backend ----
+const nap=ms=>new Promise(r=>setTimeout(r,ms));S.caps=null;S.ai={job:null,blob:null,label:'',bpm:null,stop:false};
+const aiH=(x={})=>{const t=localStorage.bms_token;return{...x,...(t?{authorization:'Bearer '+t}:{})}};
+async function aiFetch(path,opts={}){let r=await fetch(path,{...opts,headers:aiH(opts.headers)});if(r.status===401){const t=prompt('Enter your studio access token');if(!t)return r;localStorage.bms_token=t;r=await fetch(path,{...opts,headers:aiH(opts.headers)})}return r}
+async function loadCaps(){if(!window.__BMS_BACKEND){S.caps=null;renderAi();return}try{const r=await fetch('/api/capabilities',{cache:'no-store'});if(!r.ok||!(r.headers.get('content-type')||'').includes('json'))throw 0;S.caps=await r.json()}catch{S.caps=null}renderAi()}
+function renderAi(){const c=S.caps,m=c&&c.capabilities.find(x=>x.id==='ai_music'),st=$('aistatus');$('aiform').style.display='none';
+ const ICON={implemented_tested:'✅',implemented_needs_config:'⚙️',experimental:'🧪',not_available:'⛔'},LAB={implemented_tested:'Implemented and tested',implemented_needs_config:'Implemented, needs external setup',experimental:'Experimental',not_available:'Not available'};
+ $('capslist').innerHTML=c?c.capabilities.map(x=>`<div class="take" style="display:block"><b>${ICON[x.status]} ${x.name}</b><br><small>${LAB[x.status]}${x.configured===false?' (not configured)':''}. ${x.detail||''}</small></div>`).join(''):'<small>The V3 server is not connected, so the registry is unavailable.</small>';
+ if(!c){st.textContent='The AI server is not connected (this page is running without the V3 backend). The procedural beat maker and everything else still work.';return}
+ if(!m||!m.configured){st.textContent='AI music is installed, but no music model is connected yet. The studio owner must set ACESTEP_API_URL (see docs/AI_SETUP.md). The procedural beat maker still works.';return}
+ st.textContent=`Connected: ${m.mock?'MOCK test provider (plays a tone, NOT real music)':'ACE-Step music server'}${m.host?' at '+m.host:''}. Real-model test: not run yet.`;$('aiform').style.display='block';
+ $('aiconsenttxt').textContent=`I agree that my description${$('aiinst').checked?'':' and lyrics'} will be sent to the music server${m.host?' at '+m.host:''} to generate audio. No recordings are uploaded.`}
+$('aiinst').onchange=()=>{$('ailyrwrap').style.display=$('aiinst').checked?'none':'block';renderAi()};
+$('aigen').onclick=async()=>{if(!$('aiconsent').checked)return msg('Tick the consent box first: your description is sent to the music server.',1);
+ const body={prompt:$('aiprompt').value,instrumental:$('aiinst').checked};if($('aibpm').value)body.bpm=+$('aibpm').value;if($('aidur').value)body.duration=+$('aidur').value;if($('aikey').value)body.key_scale=$('aikey').value;if(!body.instrumental)body.lyrics=$('ailyr').value;
+ $('aigen').disabled=true;$('aicancel').style.display='block';$('aiplay').style.display='none';$('aiact').style.display='none';S.ai.stop=false;$('aistat').textContent='Sending…';
+ try{const r=await aiFetch('/api/music/generate',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),j=await r.json().catch(()=>({}));
+  if(!r.ok){$('aistat').textContent=j.error||('Request failed ('+r.status+')');return msg(j.error||'Generation request failed.',1)}
+  S.ai.job=j.jobId;S.ai.label=body.prompt.slice(0,28);S.ai.bpm=body.bpm||null;let jv=j.job;
+  while(jv&&jv.status==='running'){if(S.ai.stop)return;$('aistat').textContent=`${jv.stage} · ${jv.elapsedSeconds}s${jv.queuePosition?' · queue position '+jv.queuePosition:''}\n${jv.message}`;await nap(2000);const pr=await aiFetch('/api/jobs/'+j.jobId);if(!pr.ok){$('aistat').textContent='Lost contact with the job (the server may have restarted). Try again.';return msg('Lost contact with the job.',1)}jv=await pr.json()}
+  if(!jv||jv.status!=='succeeded'){const e=jv&&jv.error?jv.error.message:(jv&&jv.message)||'Failed.';$('aistat').textContent='Failed: '+e;return msg('AI music failed: '+e,1)}
+  $('aistat').textContent='Downloading…';const ar=await aiFetch(`/api/jobs/${j.jobId}/audio`);if(!ar.ok)throw new Error('Could not download the audio ('+ar.status+')');
+  S.ai.blob=await ar.blob();const url=URL.createObjectURL(S.ai.blob),ext=(S.ai.blob.type||'').includes('wav')?'wav':'mp3';$('aiplay').src=url;$('aiplay').style.display='block';$('aidl').href=url;$('aidl').download='black-mzungu-ai-music.'+ext;$('aiact').style.display='block';
+  $('aistat').textContent=`Ready (${(S.ai.blob.size/1048576).toFixed(1)} MB). Listen, then tap “Use as my beat”. Not happy? Change the description and generate again.`;msg('AI music is ready.')}
+ catch(e){$('aistat').textContent='Error: '+(e.message||e);msg('AI music error: '+(e.message||e),1)}
+ finally{$('aigen').disabled=false;$('aicancel').style.display='none'}};
+$('aicancel').onclick=async()=>{S.ai.stop=true;if(S.ai.job)await aiFetch('/api/jobs/'+S.ai.job,{method:'DELETE'}).catch(()=>{});$('aistat').textContent='Cancelled here. The music server may still finish the task.';$('aigen').disabled=false;$('aicancel').style.display='none'};
+$('aiuse').onclick=async()=>{try{if(!S.ai.blob)return;if(S.beat&&!confirm('Replace the current beat with the AI music? Your recordings are kept.'))return;const data=await S.ai.blob.arrayBuffer(),audio=await dec(data);
+ S.beat={name:'AI: '+S.ai.label,data,audio};S.peaks=peaksOf(audio);await kv('put','beat',{kind:'beat',name:S.beat.name,data});$('beatname').textContent=`${S.beat.name} · ${fmtTime(audio.duration)}`;if(S.ai.bpm){$('bpm').value=S.ai.bpm;localStorage.bms_bpm=S.ai.bpm}draw();msg('AI music loaded as your beat.')}catch(e){msg('Could not use this audio: '+(e.message||e),1)}};
+loadCaps();
 // ---- app shell: tabs, pills, transport helpers ----
 const TABS=['booth','beat','mix','master'];
 function showTab(n){for(const t of TABS){$('tab-'+t).style.display=t===n?'block':'none';$('nav-'+t).classList.toggle('active',t===n)}localStorage.bms_tab=n;window.scrollTo(0,0);if(n==='booth'){draw();renderCoach()}}

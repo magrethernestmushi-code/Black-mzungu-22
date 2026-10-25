@@ -1,6 +1,20 @@
+# V3 needs a Node web service (the API and the studio are served together).
+# The name is different from the existing static site on purpose, so applying this blueprint
+# cannot overwrite production. Secrets are never stored here: set them in the Render dashboard.
 services:
   - type: web
-    name: black-mzungu-studio
-    runtime: static
-    buildCommand: echo "static site, no build"
-    staticPublishPath: .
+    name: black-mzungu-studio-v3
+    runtime: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node server/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: STUDIO_ACCESS_TOKEN
+        sync: false
+      - key: ACESTEP_API_URL
+        sync: false
+      - key: ACESTEP_API_KEY
+        sync: false

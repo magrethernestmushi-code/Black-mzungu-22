@@ -1,2 +1,16 @@
-{ "name": "black-mzungu-studio", "version": "0.1.0", "private": true, "type": "module",
-  "scripts": { "test": "node --test test/dsp.test.mjs" } }
+{
+  "name": "black-mzungu-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/dsp.test.mjs test/server.test.mjs",
+    "start": "node server/index.js"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

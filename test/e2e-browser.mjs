@@ -61,7 +61,9 @@ const po=await p.evaluate(()=>({audios:[...document.querySelectorAll('#prodout a
 ok('before/after players + download + report',po.audios.length===2&&po.audios.every(Boolean)&&po.link&&po.log>=6&&po.fxPrev&&po.coach,JSON.stringify(po));
 const pb=await p.evaluate(async()=>{const as=[...document.querySelectorAll('#prodout audio')];const out=[];for(const a of as){const buf=await (await fetch(a.src)).arrayBuffer();const d=await new OfflineAudioContext(2,1,44100).decodeAudioData(buf);const L=d.getChannelData(0);let pk=0;for(let i=0;i<L.length;i++)pk=Math.max(pk,Math.abs(L[i]));out.push({dur:+d.duration.toFixed(1),peak:+pk.toFixed(2)})}return out});
 ok('produced audio is real and not clipped',pb.length===2&&pb.every(x=>x.peak>0.05&&x.peak<=1.0&&x.dur>2),JSON.stringify(pb));
-await p.screenshot({path:'/tmp/shot_producer.png',fullPage:false});
+await p.screenshot({path:'/tmp/shot_producer.png',fullPage:false});const rp=await p.evaluate(async()=>{const a=[...document.querySelectorAll('#prodout a')].find(x=>/Engineering report/.test(x.textContent));if(!a)return null;return await (await fetch(a.href)).text()});
+ok('engineering report is produced with measured before/after numbers',!!rp&&/Sibilance index/.test(rp)&&/## Remaining issues/.test(rp)&&/Master:/.test(rp)&&/\d+\.\d/.test(rp),rp?rp.slice(0,60).replace(/\n/g,' '):'none');
+
 await click('produndo');ok('producer undo',/restored/.test(await status()),await status());
 await tab('studio');await p.evaluate(()=>{const l=document.getElementById('lyr');l.value='Mistari yangu ya kwanza';l.dispatchEvent(new Event('input'))});
 // 8 track mixer + mute/solo UI + master + backup

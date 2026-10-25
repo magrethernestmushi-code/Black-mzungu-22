@@ -1,14 +1,27 @@
-# BLACK MZUNGU STUDIO
-Private mobile-first vocal studio. Everything runs in the browser; audio stays on the device (IndexedDB).
+# BLACK MZUNGU STUDIO V3 (branch `v3-ai-studio`)
 
-**UI:** V2 layout (BOOTH, BEAT, MIX, MASTER). **Beat maker:** drums, plucked guitar (Karplus-Strong), keys, 808 bass; genres Afro RnB Guitar, Bongo Flava, Amapiano Log Drum, Trap Guitar, Singeli. **Export:** WAV 16/24-bit, MP3, Apple Music target (about -16 LUFS).
+A private, phone-first music studio. Recording, editing, mixing and mastering run in the browser. An optional Node backend connects to an ACE-Step music server for AI-generated instrumentals.
 
-**Working:** FL-style playlist (track headers with arm/mute/solo, named clips, ruler), live input visualizer with level guide, mic processing mode + gain + Bluetooth warning, take review (listen, keep, delete, undo), re-take muting, timeline zoom, one-tap Producer tab (Swahili guide + Auto Produce with before/after), lyrics pad, tabbed studio UI (Studio, Mixer, Vocal FX, Beat, Master, Project), 4 vocal tracks with level/pan/mute/solo, spatial (HRTF) preview, beat import (MP3/WAV/M4A), beat maker (rule-based, 5 genres), multi-take recording with metronome, count-in, loop, input device selector, live meters and spectrum, clip editing (split, trim, move, duplicate, fades, gain, undo), auto vocal engineer (measures the vocal, sets HPF/EQ/sibilance/compressor/reverb/delay/gate), 10 editable presets + your own, experimental pitch correction, Mix Assistant, loudness-targeted mastering (limiter + true-peak ceiling), WAV and MP3 export with validation, project backup/restore (.bms).
+**Not deployed from this branch.** Production still serves the previous static version. Do not merge until you have tested V3.
 
-**Not built yet:** true de-esser, noise reduction beyond the gate, AI models (denoise, stem separation), loudness-matched A/B preview, drag editing, projects list.
+## Run locally
+```
+npm ci
+STUDIO_ACCESS_TOKEN=pick-a-long-secret npm start        # http://localhost:3000
+# optional AI music: also set ACESTEP_API_URL and ACESTEP_API_KEY (see docs/AI_SETUP.md)
+# test the AI screens without a model: MUSIC_PROVIDER=mock npm start   (plays a test tone, labelled MOCK)
+```
+## Test
+```
+npm test                  # 44 unit and server tests
+node test/e2e-browser.mjs # real-browser tests (needs puppeteer-core and @sparticuz/chromium)
+node test/e2e-v3.mjs      # AI music flow against a local fake ACE-Step server
+```
+## Deploy on Render
+Use `render.yaml` (a Node web service named `black-mzungu-studio-v3`, health check `/api/health`). Set `STUDIO_ACCESS_TOKEN`, and optionally `ACESTEP_API_URL` and `ACESTEP_API_KEY`, in the Render dashboard. Copy `.env.example`; never commit `.env`. In production the AI routes are disabled until `STUDIO_ACCESS_TOKEN` is set.
 
-**Browser test:** `test/e2e-browser.mjs` drives the real page in headless Chromium with a fake microphone (beat maker, record, playback, exports, MP3 import, mastering, backup, reload). It needs `puppeteer-core` and `@sparticuz/chromium`.
+## Documents
+`docs/AI_TECH_RESEARCH.md`, `ARCHITECTURE.md`, `FEATURE_STATUS.md`, `AI_SETUP.md`, `TEST_REPORT.md`, `COSTS_AND_LIMITATIONS.md`.
 
-**Tests:** `npm test` (31 DSP/clip/beat/backup tests). Real-device listening tests (latency, recording quality, pitch-correction artefacts) are still needed.
-
-Deploy: static site, publish path `.` (see render.yaml). Third-party notices: THIRD_PARTY.md.
+## Honest status in one paragraph
+Working and tested: recording, editing, vocal analysis and auto settings, Mix Assistant, loudness mastering, exports, backup, procedural beats, engineering report. Implemented but never run against a real model: AI music (ACE-Step). Experimental: pitch correction, spatial preview. Not available: Suno, source separation, AI denoising, true de-esser, LLM planner. Third-party notice: `THIRD_PARTY.md` (lamejs, LGPL-3.0).
